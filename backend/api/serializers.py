@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Sermon, Event, PrayerRequest, BibleStudy, Donation
+from .models import Sermon, Event, PrayerRequest, BibleStudy, Donation, Project
 
 class SermonSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,4 +24,9 @@ class BibleStudySerializer(serializers.ModelSerializer):
 class DonationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Donation
+        fields = '__all__'
+
+class ProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Project
         fields = '__all__'

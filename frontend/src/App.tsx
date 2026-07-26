@@ -92,6 +92,17 @@ interface Donation {
   status?: string;
 }
 
+interface ChurchProject {
+  id: number;
+  title: string;
+  category: string;
+  desc: string;
+  goal_amount: number;
+  raised_amount: number;
+  image_url: string;
+  status: string;
+}
+
 interface ActivityLog {
   time: string;
   msg: string;
@@ -184,6 +195,59 @@ const DEFAULT_GALLERY = [
   { album: "Community Outreach", title: "Free Health Checkups Clinic", img: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&q=80&w=600" }
 ];
 
+const DEFAULT_PROJECTS: ChurchProject[] = [
+  {
+    id: 1,
+    title: "Church Sanctuary Construction",
+    category: "Construction",
+    desc: "We are building a permanent, state-of-the-art sanctuary to replace the current temporary structure at Bugema University. The new building will seat 1,200 members and include a multimedia worship center, sound-proof recording room, and dedicated Sabbath School classrooms.",
+    goal_amount: 350000000,
+    raised_amount: 127500000,
+    image_url: "https://images.unsplash.com/photo-1562521879-0e1d6b0da7de?auto=format&fit=crop&q=80&w=600",
+    status: "Active"
+  },
+  {
+    id: 2,
+    title: "Student Fellowship & Resource Center",
+    category: "Community",
+    desc: "A dedicated multi-purpose student hub featuring quiet study rooms, a library of Christian literature, counseling offices, and a commons area for cell group meetings, mentorship programs, and student welfare services.",
+    goal_amount: 180000000,
+    raised_amount: 62400000,
+    image_url: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=600",
+    status: "Active"
+  },
+  {
+    id: 3,
+    title: "Church Outreach Transport Van",
+    category: "Outreach",
+    desc: "Acquiring a 22-seater church van for weekly outreach programs to surrounding communities, hospital visitations, and transportation of choir groups to events. This will greatly expand our mission reach in Luwero and Mukono districts.",
+    goal_amount: 85000000,
+    raised_amount: 41200000,
+    image_url: "https://images.unsplash.com/photo-1570125909232-eb263c188f7e?auto=format&fit=crop&q=80&w=600",
+    status: "Active"
+  },
+  {
+    id: 4,
+    title: "Solar Power Installation",
+    category: "Infrastructure",
+    desc: "Installing a 30-panel solar energy system on the church campus to reduce electricity costs, power the media and livestreaming equipment, and ensure uninterrupted worship services during load-shedding periods.",
+    goal_amount: 45000000,
+    raised_amount: 38900000,
+    image_url: "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&q=80&w=600",
+    status: "Almost Complete"
+  },
+  {
+    id: 5,
+    title: "Back to School Initiative",
+    category: "Community",
+    desc: "Helping vulnerable children in our local community get back to school by providing tuition fees, school supplies, and uniforms. Let's invest in the future of our young ones and show them Christ's love.",
+    goal_amount: 15000000,
+    raised_amount: 2500000,
+    image_url: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=600",
+    status: "Active"
+  },
+];
+
 const DEFAULT_BELIEFS = [
   { title: "The Bible", desc: "The Holy Scriptures are the written Word of God, given by divine inspiration. They are the supreme standard of character and test of experience." },
   { title: "The Sabbath", desc: "The seventh day of the week, Sabbath (Saturday), is a holy day of rest, worship, and ministry, established at Creation and kept by Jesus." },
@@ -193,6 +257,12 @@ const DEFAULT_BELIEFS = [
   { title: "Baptism", desc: "By baptism we confess our faith in the death and resurrection of Jesus Christ, and testify of our death to sin and purpose to walk in newness of life." }
 ];
 
+const DEFAULT_PRAYERS: PrayerRequest[] = [
+  { id: 1, name: "Grace Kemigisha", content: "Praying for guidance and peace as I prepare for my final exams at Bugema University this semester.", confidential: false },
+  { id: 2, name: "Anonymous", content: "Please pray for my mother's quick recovery from a severe malaria infection.", confidential: false },
+  { id: 3, name: "Elder Samuel", content: "Let's pray for the upcoming campus camp meeting outreach program to touch many young souls.", confidential: false }
+];
+
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -200,16 +270,115 @@ export default function App() {
   // Core Data States
   const [sermons, setSermons] = useState<Sermon[]>(DEFAULT_SERMONS);
   const [events, setEvents] = useState<ChurchEvent[]>(DEFAULT_EVENTS);
-  const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
+  const [prayers, setPrayers] = useState<PrayerRequest[]>(DEFAULT_PRAYERS);
   const [bibleStudies, setBibleStudies] = useState<BibleStudy[]>([]);
   const [donations, setDonations] = useState<Donation[]>([]);
+  const [projects, setProjects] = useState<ChurchProject[]>(DEFAULT_PROJECTS);
+  const [selectedProjectFund, setSelectedProjectFund] = useState('Building Fund');
   const [logs, setLogs] = useState<ActivityLog[]>([{ time: new Date().toLocaleTimeString(), msg: "App loaded." }]);
 
   // Interactive View States
   const [dailyVerse, setDailyVerse] = useState(BIBLE_VERSES[0]);
   const [selectedSermonCat, setSelectedSermonCat] = useState('all');
   const [selectedGalleryAlbum, setSelectedGalleryAlbum] = useState('all');
-  
+
+  // ── Weekly Discipleship State ──────────────────────────────────────────────
+  const getWeekKey = () => {
+    const d = new Date();
+    const jan1 = new Date(d.getFullYear(), 0, 1);
+    return 'week-' + Math.ceil(((d.getTime() - jan1.getTime()) / 86400000 + jan1.getDay() + 1) / 7) + '-' + d.getFullYear();
+  };
+
+  const [checklist, setChecklist] = useState<Record<string,boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem('sic_checklist_' + getWeekKey()) || '{}'); } catch { return {}; }
+  });
+
+  const [pollVoted, setPollVoted] = useState<string|null>(() =>
+    localStorage.getItem('sic_poll_' + getWeekKey())
+  );
+  const [pollResults, setPollResults] = useState<Record<string,number>>(() => {
+    try { return JSON.parse(localStorage.getItem('sic_poll_results') || '{"Hebrews":18,"Romans":14,"Genesis":9,"John":22}'); } catch { return {"Hebrews":18,"Romans":14,"Genesis":9,"John":22}; }
+  });
+
+  const [praiseWall, setPraiseWall] = useState<{name:string;text:string;time:string}[]>(() => {
+    try { return JSON.parse(localStorage.getItem('sic_praise_wall') || '[]'); } catch { return []; }
+  });
+  const [praiseForm, setPraiseForm] = useState({ name: '', text: '' });
+
+  const [prayerSupport, setPrayerSupport] = useState<Record<number,number>>(() => {
+    try { return JSON.parse(localStorage.getItem('sic_prayer_support') || '{}'); } catch { return {}; }
+  });
+  const [prayerSupportedIds, setPrayerSupportedIds] = useState<number[]>(() => {
+    try { return JSON.parse(localStorage.getItem('sic_prayer_supported_ids') || '[]'); } catch { return []; }
+  });
+
+  const [quizAnswers, setQuizAnswers] = useState<Record<number,string>>({});
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+
+  const CHECKLIST_ITEMS = [
+    { id: 'sabbath', label: 'Attended Sabbath School', icon: '📖' },
+    { id: 'sermon', label: 'Listened to a Sermon', icon: '🎙️' },
+    { id: 'prayer', label: 'Personal Prayer Time', icon: '🙏' },
+    { id: 'devotion', label: 'Daily Devotion (5 Days)', icon: '📔' },
+    { id: 'verse', label: 'Memorized a Scripture Verse', icon: '✝️' },
+    { id: 'tithe', label: 'Returned Tithe & Offering', icon: '💰' },
+    { id: 'outreach', label: 'Shared Faith with Someone', icon: '🌍' },
+  ];
+
+  const POLL_OPTIONS = ['Hebrews', 'Romans', 'Genesis', 'John'];
+
+  const QUIZ_QUESTIONS = [
+    { q: 'What day is the Seventh-day Adventist Sabbath?', options: ['Friday','Saturday','Sunday','Monday'], answer: 'Saturday' },
+    { q: 'Which chapter begins "For God so loved the world..."?', options: ['John 1','John 3','John 11','Romans 8'], answer: 'John 3' },
+    { q: 'Complete: "Remember the Sabbath day, to keep it ___"', options: ['blessed','holy','sacred','quiet'], answer: 'holy' },
+  ];
+
+  const toggleChecklistItem = (id: string) => {
+    const updated = { ...checklist, [id]: !checklist[id] };
+    setChecklist(updated);
+    localStorage.setItem('sic_checklist_' + getWeekKey(), JSON.stringify(updated));
+  };
+
+  const submitPollVote = (option: string) => {
+    if (pollVoted) return;
+    const updated = { ...pollResults, [option]: ((pollResults[option] || 0) + 1) };
+    setPollResults(updated);
+    setPollVoted(option);
+    localStorage.setItem('sic_poll_results', JSON.stringify(updated));
+    localStorage.setItem('sic_poll_' + getWeekKey(), option);
+    toast.success('Vote for "' + option + '" recorded! Thank you.');
+  };
+
+  const submitPraise = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!praiseForm.text.trim()) return;
+    const newEntry = { name: praiseForm.name || 'Anonymous', text: praiseForm.text, time: new Date().toLocaleDateString() };
+    const updated = [newEntry, ...praiseWall].slice(0, 20);
+    setPraiseWall(updated);
+    localStorage.setItem('sic_praise_wall', JSON.stringify(updated));
+    setPraiseForm({ name: '', text: '' });
+    toast.success('Praise added to the wall! 🙌');
+  };
+
+  const supportPrayer = (id: number) => {
+    if (prayerSupportedIds.includes(id)) return;
+    const updated = { ...prayerSupport, [id]: (prayerSupport[id] || 0) + 1 };
+    const updatedIds = [...prayerSupportedIds, id];
+    setPrayerSupport(updated);
+    setPrayerSupportedIds(updatedIds);
+    localStorage.setItem('sic_prayer_support', JSON.stringify(updated));
+    localStorage.setItem('sic_prayer_supported_ids', JSON.stringify(updatedIds));
+    toast.success('You are praying with this person! 🙏');
+  };
+
+  const submitQuiz = () => {
+    let score = 0;
+    QUIZ_QUESTIONS.forEach((q, i) => { if (quizAnswers[i] === q.answer) score++; });
+    setQuizScore(score);
+    setQuizSubmitted(true);
+  };
+
   // Modals States
   const [selectedMinistry, setSelectedMinistry] = useState<typeof DEFAULT_MINISTRIES[0] | null>(null);
   const [registeringEvent, setRegisteringEvent] = useState<ChurchEvent | null>(null);
@@ -250,7 +419,15 @@ export default function App() {
     fetchPrayers();
     fetchBibleStudies();
     fetchDonations();
+    fetchProjects();
   }, []);
+
+  // Pre-fill donation fund when navigating to Give from a project
+  useEffect(() => {
+    if (currentRoute === 'give') {
+      setDonationForm(prev => ({ ...prev, fund: selectedProjectFund }));
+    }
+  }, [currentRoute, selectedProjectFund]);
 
   const triggerLog = (msg: string) => {
     setLogs(prev => [{ time: new Date().toLocaleTimeString(), msg }, ...prev]);
@@ -285,7 +462,7 @@ export default function App() {
       const res = await fetch(`${API_URL}/prayers/`);
       if (res.ok) {
         const data = await res.json();
-        setPrayers(data);
+        setPrayers(data.length > 0 ? data : DEFAULT_PRAYERS);
       }
     } catch {
       // Local fallback
@@ -310,6 +487,18 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setDonations(data);
+      }
+    } catch {
+      // Local fallback
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch(`${API_URL}/projects/`);
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(data.length > 0 ? data : DEFAULT_PROJECTS);
       }
     } catch {
       // Local fallback
@@ -559,6 +748,7 @@ export default function App() {
               { route: 'gallery', label: 'Gallery' },
               { route: 'bible-study', label: 'Bible Study' },
               { route: 'prayer-requests', label: 'Prayer' },
+              { route: 'projects', label: 'Projects' },
               { route: 'give', label: 'Give' },
               { route: 'contact', label: 'Contact' },
             ].map(({ route, label }) => (
@@ -762,6 +952,117 @@ export default function App() {
                   </motion.button>
                 </motion.div>
               </motion.div>
+            </div>
+
+            {/* ========= WEEKLY DISCIPLESHIP DASHBOARD ========= */}
+            <div className="section-padding" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}>
+              <div className="container">
+                <motion.div className="section-header text-center" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  <h2 className="section-title" style={{ color: '#D4AF37' }}>Your Weekly Spiritual Checkpoint</h2>
+                  <p className="section-subtitle" style={{ color: 'rgba(255,255,255,0.7)' }}>Track your discipleship journey this week — reset every Sabbath</p>
+                </motion.div>
+
+                <div className="grid grid-3 gap-3 margin-top-3">
+
+                  {/* Discipleship Checklist */}
+                  <motion.div className="card dark-card" variants={staggerItem} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                    <h3 style={{ color: '#D4AF37', marginBottom: '1rem' }}>✅ Weekly Checklist</h3>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                      {CHECKLIST_ITEMS.map(item => (
+                        <li key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' }} onClick={() => toggleChecklistItem(item.id)}>
+                          <span style={{ fontSize: '1rem', width: '24px', height: '24px', borderRadius: '6px', background: checklist[item.id] ? '#10b981' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', flexShrink: 0, color: '#fff' }}>
+                            {checklist[item.id] ? '✓' : ''}
+                          </span>
+                          <span style={{ fontSize: '0.9rem', color: checklist[item.id] ? '#10b981' : 'rgba(255,255,255,0.85)', textDecoration: checklist[item.id] ? 'line-through' : 'none', transition: 'all 0.3s' }}>
+                            {item.icon} {item.label}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    <p style={{ marginTop: '1rem', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+                      {Object.values(checklist).filter(Boolean).length} / {CHECKLIST_ITEMS.length} completed this week
+                    </p>
+                  </motion.div>
+
+                  {/* Poll + Praise Wall */}
+                  <motion.div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} variants={staggerItem} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                    <div className="card dark-card" style={{ flex: 1 }}>
+                      <h3 style={{ color: '#D4AF37', marginBottom: '0.75rem' }}>📊 Lesson Poll</h3>
+                      <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '0.75rem' }}>Which Bible book impacted you most this Sabbath?</p>
+                      {POLL_OPTIONS.map(option => {
+                        const total = Object.values(pollResults).reduce((s: number, v) => s + Number(v), 0);
+                        const pct = total > 0 ? Math.round(Number(pollResults[option] || 0) / total * 100) : 0;
+                        return (
+                          <div key={option} style={{ marginBottom: '0.5rem' }}>
+                            <button
+                              onClick={() => submitPollVote(option)}
+                              disabled={!!pollVoted}
+                              style={{ width: '100%', textAlign: 'left', padding: '0.4rem 0.75rem', background: pollVoted === option ? '#1e3a8a' : 'rgba(255,255,255,0.06)', border: '1px solid ' + (pollVoted === option ? '#D4AF37' : 'rgba(255,255,255,0.15)'), borderRadius: '6px', color: '#fff', cursor: pollVoted ? 'default' : 'pointer', transition: 'all 0.2s', fontSize: '0.88rem' }}
+                            >
+                              <span>{option}</span>
+                              {pollVoted && <span style={{ float: 'right', color: '#D4AF37' }}>{pct}%</span>}
+                            </button>
+                            {pollVoted && (
+                              <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginTop: '2px' }}>
+                                <div style={{ height: '100%', width: pct + '%', background: '#D4AF37', borderRadius: '2px', transition: 'width 0.6s ease' }} />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="card dark-card" style={{ flex: 1 }}>
+                      <h3 style={{ color: '#D4AF37', marginBottom: '0.75rem' }}>🙌 Community Praise Wall</h3>
+                      <div style={{ maxHeight: '130px', overflowY: 'auto', marginBottom: '0.75rem' }}>
+                        {praiseWall.length === 0 && <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>Be the first to share a praise!</p>}
+                        {praiseWall.map((p, i) => (
+                          <div key={i} style={{ padding: '0.4rem 0', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '0.85rem' }}>
+                            <strong style={{ color: '#D4AF37' }}>{p.name}:</strong>
+                            <span style={{ color: 'rgba(255,255,255,0.8)', marginLeft: '0.4rem' }}>{p.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <form onSubmit={submitPraise} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <input type="text" value={praiseForm.name} onChange={e => setPraiseForm({ ...praiseForm, name: e.target.value })} placeholder="Your name (optional)" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '0.4rem 0.6rem', color: '#fff', fontSize: '0.85rem' }} />
+                        <input type="text" value={praiseForm.text} onChange={e => setPraiseForm({ ...praiseForm, text: e.target.value })} placeholder="Share a praise report..." required style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', padding: '0.4rem 0.6rem', color: '#fff', fontSize: '0.85rem' }} />
+                        <button type="submit" className="btn btn-accent btn-small">Post Praise 🙏</button>
+                      </form>
+                    </div>
+                  </motion.div>
+
+                  {/* Weekly Bible Quiz */}
+                  <motion.div className="card dark-card" variants={staggerItem} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                    <h3 style={{ color: '#D4AF37', marginBottom: '1rem' }}>📝 Weekly Bible Quiz</h3>
+                    {!quizSubmitted ? (
+                      <>
+                        {QUIZ_QUESTIONS.map((q, i) => (
+                          <div key={i} style={{ marginBottom: '1rem' }}>
+                            <p style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.9)', marginBottom: '0.4rem' }}><strong>{i + 1}.</strong> {q.q}</p>
+                            {q.options.map(opt => (
+                              <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '0.3rem', cursor: 'pointer' }}>
+                                <input type="radio" name={'q-' + i} value={opt} checked={quizAnswers[i] === opt} onChange={() => setQuizAnswers({ ...quizAnswers, [i]: opt })} style={{ accentColor: '#D4AF37' }} />
+                                {opt}
+                              </label>
+                            ))}
+                          </div>
+                        ))}
+                        <button onClick={submitQuiz} disabled={Object.keys(quizAnswers).length < QUIZ_QUESTIONS.length} className="btn btn-accent btn-block">Submit Quiz</button>
+                      </>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>{quizScore === QUIZ_QUESTIONS.length ? '🏆' : quizScore >= 2 ? '⭐' : '📖'}</div>
+                        <h4 style={{ color: '#D4AF37' }}>Score: {quizScore} / {QUIZ_QUESTIONS.length}</h4>
+                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.88rem', marginTop: '0.5rem' }}>
+                          {quizScore === QUIZ_QUESTIONS.length ? 'Perfect! You are a true Bible champion!' : quizScore >= 2 ? "Well done! Keep studying God's Word." : 'Keep growing! Open your Bible this week.'}
+                        </p>
+                        <button onClick={() => { setQuizAnswers({}); setQuizSubmitted(false); setQuizScore(0); }} className="btn btn-outline btn-small margin-top-2">Retry Quiz</button>
+                      </div>
+                    )}
+                  </motion.div>
+
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
@@ -1151,6 +1452,33 @@ export default function App() {
                 )}
               </div>
             </div>
+
+            {/* Sabbath School Lesson Discussion */}
+            <div className="section-padding bg-light">
+              <div className="container">
+                <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  <h2 className="section-title text-center">📚 Sabbath School Lesson Discussion</h2>
+                  <p className="section-subtitle text-center">Join the weekly SDA Adult lesson — study, discuss, and grow together</p>
+                </motion.div>
+                <motion.div className="grid grid-3 gap-3 margin-top-3" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  {[
+                    { title: 'Official Adult Lesson', desc: "Download this quarter's official Sabbath School lesson booklet and study daily.", link: 'https://www.sabbath.school/', icon: '📖', cta: 'Get Lesson' },
+                    { title: 'SSNET Discussion Guides', desc: 'Deep-dive commentary and teacher guides for each weekly lesson from ssnet.org.', link: 'https://ssnet.org/lessons/', icon: '🗣️', cta: 'Read Commentary' },
+                    { title: 'Hope Channel Video', desc: 'Watch video presentations for each lesson from Hope Channel International.', link: 'https://www.hopechannel.com/', icon: '📺', cta: 'Watch Lesson' },
+                    { title: 'SDA Church Quarterly', desc: 'Access the global SDA Sabbath School quarterly archives and resources.', link: 'https://sspm.adventist.org/', icon: '📰', cta: 'View Quarterly' },
+                    { title: 'WhatsApp Study Group', desc: "Join our SIC Bugema WhatsApp group where members discuss each day's lesson.", link: 'https://wa.me/256700000000', icon: '💬', cta: 'Join Group' },
+                    { title: 'Audio Bible Study', desc: "Listen to this week's lesson discussion podcast from various SDA ministries.", link: 'https://www.sabbath.school/', icon: '🎧', cta: 'Listen Now' },
+                  ].map((res, i) => (
+                    <motion.div key={i} className="card student-card" variants={staggerItem} whileHover={{ y: -5, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.12)' }}>
+                      <div className="student-icon" style={{ fontSize: '1.6rem' }}>{res.icon}</div>
+                      <h3>{res.title}</h3>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', flexGrow: 1 }}>{res.desc}</p>
+                      <a href={res.link} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-small margin-top-2">{res.cta} →</a>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -1206,6 +1534,152 @@ export default function App() {
                     Your request has been submitted. Rest assured, our team will be praying for you.
                   </motion.div>
                 )}
+              </div>
+            </div>
+
+            {/* Community Prayer Support Wall */}
+            <div className="section-padding bg-light">
+              <div className="container">
+                <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  <h2 className="section-title text-center">Community Prayer Support</h2>
+                  <p className="section-subtitle text-center">Stand in prayer with your brothers and sisters this week</p>
+                </motion.div>
+                <motion.div className="grid grid-2 gap-3 margin-top-3" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  {prayers.filter(p => !p.confidential).length > 0 ? (
+                    prayers.filter(p => !p.confidential).map((pr, i) => (
+                      <motion.div key={i} className="card" variants={staggerItem} whileHover={{ y: -3 }}>
+                        <p style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>"{pr.content}"</p>
+                        <p style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>— <strong>{pr.name || 'Anonymous'}</strong></p>
+                        <button
+                          onClick={() => pr.id !== undefined && supportPrayer(pr.id)}
+                          className="btn btn-small btn-outline margin-top-1"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                          disabled={pr.id !== undefined && prayerSupportedIds.includes(pr.id)}
+                        >
+                          🙏 {pr.id !== undefined && prayerSupportedIds.includes(pr.id) ? 'Praying!' : 'Pray With Them'}
+                          {pr.id !== undefined && prayerSupport[pr.id] > 0 && <span>({prayerSupport[pr.id]})</span>}
+                        </button>
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="card col-span-2 text-center" style={{ padding: '2rem' }}>
+                      <p style={{ color: 'var(--text-muted)' }}>No public prayer requests submitted yet. Be the first to share one!</p>
+                    </div>
+                  )}
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ================= PROJECTS VIEW ================= */}
+        {currentRoute === 'projects' && (
+          <motion.div key="projects" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <div className="page-header" style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)' }}>
+              <div className="container text-center">
+                <h1 style={{ color: '#fff' }}>Seattle Projects</h1>
+                <p style={{ color: 'rgba(255,255,255,0.75)' }}>Active church initiatives — construction, community development, and outreach</p>
+              </div>
+            </div>
+
+            <div className="section-padding">
+              <div className="container">
+                <motion.div className="grid grid-2 gap-4" variants={staggerContainer} initial="hidden" animate="visible">
+                  {projects.map(proj => {
+                    const pct = Math.min(100, Math.round((proj.raised_amount / proj.goal_amount) * 100));
+                    const categoryColors: Record<string,string> = {
+                      Construction: '#1e3a8a',
+                      Community: '#059669',
+                      Outreach: '#d97706',
+                      Infrastructure: '#7c3aed',
+                    };
+                    const color = categoryColors[proj.category] || '#1e3a8a';
+                    return (
+                      <motion.div key={proj.id} className="card" variants={staggerItem} whileHover={{ y: -6, boxShadow: '0 20px 40px -10px rgba(0,0,0,0.15)' }} style={{ overflow: 'hidden', padding: 0 }}>
+                        {/* Project image */}
+                        <div style={{ height: '200px', backgroundImage: 'url(' + proj.image_url + ')', backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' }}>
+                          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.7))' }} />
+                          <span style={{ position: 'absolute', top: '1rem', left: '1rem', background: color, color: '#fff', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 600 }}>
+                            {proj.category}
+                          </span>
+                          <span style={{ position: 'absolute', top: '1rem', right: '1rem', background: pct >= 100 ? '#10b981' : pct >= 75 ? '#D4AF37' : 'rgba(255,255,255,0.15)', color: '#fff', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 600, backdropFilter: 'blur(4px)' }}>
+                            {proj.status}
+                          </span>
+                        </div>
+
+                        <div style={{ padding: '1.5rem' }}>
+                          <h3 style={{ marginBottom: '0.5rem' }}>{proj.title}</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>{proj.desc}</p>
+
+                          {/* Funding progress */}
+                          <div style={{ marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Funding Progress</span>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: color }}>{pct}%</span>
+                            </div>
+                            <div style={{ height: '10px', background: 'var(--bg-light, #f1f5f9)', borderRadius: '5px', overflow: 'hidden' }}>
+                              <motion.div
+                                initial={{ width: 0 }}
+                                whileInView={{ width: pct + '%' }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 1.2, ease: 'easeOut' }}
+                                style={{ height: '100%', background: 'linear-gradient(90deg, ' + color + ', ' + color + '99)', borderRadius: '5px' }}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem', fontSize: '0.82rem' }}>
+                              <span style={{ color: '#059669', fontWeight: 600 }}>
+                                UGX {proj.raised_amount.toLocaleString()} raised
+                              </span>
+                              <span style={{ color: 'var(--text-muted)' }}>
+                                Goal: UGX {proj.goal_amount.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              setSelectedProjectFund(proj.category === 'Construction' ? 'Building Fund' : proj.category === 'Outreach' ? 'Mission Fund' : 'Offering');
+                              setCurrentRoute('give');
+                            }}
+                            className="btn btn-primary btn-block"
+                          >
+                            🙌 Support This Project
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+
+                {/* Project totals summary banner */}
+                <motion.div
+                  variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}
+                  className="card dark-card text-center margin-top-4"
+                  style={{ padding: '2rem' }}
+                >
+                  <h3 style={{ color: '#D4AF37', marginBottom: '0.5rem' }}>Total Project Funding Overview</h3>
+                  <div className="grid grid-3 gap-3 margin-top-2">
+                    <div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#D4AF37' }}>
+                        UGX {projects.reduce((s, p) => s + p.raised_amount, 0).toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Total Raised</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff' }}>
+                        UGX {projects.reduce((s, p) => s + p.goal_amount, 0).toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Total Goal</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>
+                        {Math.round(projects.reduce((s, p) => s + p.raised_amount, 0) / projects.reduce((s, p) => s + p.goal_amount, 0) * 100)}%
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>Overall Progress</div>
+                    </div>
+                  </div>
+                  <button onClick={() => setCurrentRoute('give')} className="btn btn-accent margin-top-3">Give Towards Any Project</button>
+                </motion.div>
               </div>
             </div>
           </motion.div>
@@ -1429,7 +1903,8 @@ export default function App() {
                       { id: 'admin-prayers', label: 'Prayer Requests' },
                       { id: 'admin-donations', label: 'Donations' },
                       { id: 'admin-events', label: 'Manage Events' },
-                      { id: 'admin-sermons', label: 'Manage Sermons' }
+                      { id: 'admin-sermons', label: 'Manage Sermons' },
+                      { id: 'admin-projects', label: 'Manage Projects' }
                     ].map(tab => (
                       <li key={tab.id}>
                         <button 
@@ -1444,6 +1919,36 @@ export default function App() {
                 </div>
 
                 <div className="admin-main-panel card">
+                  {/* Projects Tab */}
+                  {activeAdminTab === 'admin-projects' && (
+                    <div className="admin-tab-content active">
+                      <h2>Manage Projects</h2>
+                      <p className="text-muted">Review active church construction and outreach projects.</p>
+                      <div className="margin-top-2">
+                        {projects.map(proj => {
+                          const pct = Math.min(100, Math.round((proj.raised_amount / proj.goal_amount) * 100));
+                          return (
+                            <div key={proj.id} className="card margin-top-2" style={{ padding: '1rem 1.25rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1 }}>
+                                  <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--primary)', background: 'var(--bg-light, #f1f5f9)', padding: '0.2rem 0.6rem', borderRadius: '20px', marginBottom: '0.4rem', display: 'inline-block' }}>{proj.category}</span>
+                                  <h4 style={{ margin: '0.25rem 0' }}>{proj.title}</h4>
+                                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+                                    UGX {proj.raised_amount.toLocaleString()} / {proj.goal_amount.toLocaleString()} — <strong style={{ color: 'var(--primary)' }}>{pct}% funded</strong>
+                                  </p>
+                                  <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '0.5rem' }}>
+                                    <div style={{ height: '100%', width: pct + '%', background: 'var(--primary)', borderRadius: '3px', transition: 'width 0.8s ease' }} />
+                                  </div>
+                                </div>
+                                <span style={{ padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, background: proj.status === 'Active' ? '#d1fae5' : '#fef3c7', color: proj.status === 'Active' ? '#065f46' : '#92400e' }}>{proj.status}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Dashboard Stats */}
                   {activeAdminTab === 'admin-stats' && (
                     <div className="admin-tab-content active">

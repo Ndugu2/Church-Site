@@ -5,7 +5,9 @@ from .views import (
     EventViewSet,
     PrayerRequestViewSet,
     BibleStudyViewSet,
-    DonationViewSet
+    DonationViewSet,
+    ProjectViewSet,
+    LoginView
 )
 
 router = DefaultRouter()
@@ -14,7 +16,9 @@ router.register(r'events', EventViewSet)
 router.register(r'prayers', PrayerRequestViewSet)
 router.register(r'bible-studies', BibleStudyViewSet)
 router.register(r'donations', DonationViewSet)
+router.register(r'projects', ProjectViewSet)
 
 urlpatterns = [
+    path('login/', LoginView.as_view(), name='api-login'),
     path('', include(router.urls)),
 ]

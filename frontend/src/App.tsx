@@ -597,16 +597,47 @@ export default function App() {
         {currentRoute === 'home' && (
           <motion.div key="home" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
             <div className="hero-section">
+              {/* Decorative ring */}
+              <div className="hero-ring" />
+              <div className="hero-ring hero-ring-2" />
+
               <motion.div className="hero-content" initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
-                <motion.h1 className="hero-title" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }}>Seattle International Church</motion.h1>
-                <motion.p className="hero-location" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3 }}>Bugema University</motion.p>
-                <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.45 }}>Welcome to a Christ-Centered International Family of Faith</motion.p>
+                <motion.div className="hero-badge" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.05 }}>
+                  <span className="pulse-dot"></span>
+                  <span>Sabbath Worship • Every Saturday</span>
+                </motion.div>
+                <motion.h1 className="hero-title" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.15 }}>Seattle International Church</motion.h1>
+                <motion.p className="hero-location" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.3 }}>Bugema University, Uganda</motion.p>
+                <motion.p className="hero-subtitle" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.45 }}>Welcome to a Christ-Centered International Family of Faith — Growing in Grace, Serving the World, Sharing Hope.</motion.p>
                 <motion.div className="hero-actions" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.6 }}>
-                  <button onClick={() => setCurrentRoute('contact')} className="btn btn-primary">Plan Your Visit</button>
-                  <button onClick={() => setCurrentRoute('watch-live')} className="btn btn-accent">Watch Live</button>
+                  <button onClick={() => setCurrentRoute('contact')} className="btn btn-hero-primary">Plan Your Visit</button>
+                  <button onClick={() => setCurrentRoute('watch-live')} className="btn btn-hero-outline">
+                    <span className="pulse-dot"></span>
+                    Watch Live
+                  </button>
                 </motion.div>
               </motion.div>
+
+              {/* Scroll cue */}
+              <motion.div className="hero-scroll-cue" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2, duration: 0.8 }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+              </motion.div>
             </div>
+
+            {/* Stats bar */}
+            <motion.div className="hero-stats-bar" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.5 }}>
+              {[
+                { value: '50+', label: 'Nations Represented' },
+                { value: '1,200+', label: 'Active Members' },
+                { value: '15+', label: 'Student Ministries' },
+                { value: '40+', label: 'Years of Ministry' },
+              ].map((stat) => (
+                <motion.div key={stat.label} className="hero-stat-item" variants={fadeUp}>
+                  <span className="hero-stat-value">{stat.value}</span>
+                  <span className="hero-stat-label">{stat.label}</span>
+                </motion.div>
+              ))}
+            </motion.div>
 
             <div className="section-padding bg-light">
               <motion.div className="container grid grid-2 gap-4" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}>

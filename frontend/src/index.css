@@ -342,46 +342,65 @@ a:hover {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
 }
 
 .logo-text {
     display: flex;
     flex-direction: column;
+    white-space: nowrap;
 }
 
 .logo-title {
     font-family: var(--font-serif);
     font-weight: 700;
-    font-size: 1.3rem;
+    font-size: 1.25rem;
     color: var(--primary-dark);
     letter-spacing: 0.5px;
+    line-height: 1.2;
 }
 
 .logo-sub {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--text-light);
     font-weight: 500;
     text-transform: uppercase;
+    line-height: 1.2;
+    margin-top: 2px;
 }
 
 .nav-bar {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 10px;
 }
 
 .nav-link {
     color: var(--text-color);
     font-weight: 600;
-    font-size: 0.95rem;
-    padding: 8px 12px;
+    font-size: 0.88rem;
+    padding: 6px 10px;
     border-radius: var(--border-radius-sm);
     font-family: var(--font-heading);
+    white-space: nowrap;
+    border: none;
+    background: none;
+    outline: none;
+    transition: var(--transition);
 }
 
 .nav-link:hover, .nav-link.active {
     color: var(--primary);
     background-color: rgba(30, 58, 138, 0.05);
+}
+
+.nav-link:focus {
+    outline: none;
+}
+
+.nav-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
 }
 
 .watch-live-btn {
@@ -1207,18 +1226,7 @@ a:hover {
 }
 
 /* Responsive Breakpoints */
-@media (max-width: 992px) {
-    .grid-4 { grid-template-columns: repeat(2, 1fr); }
-    .admin-container {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .grid-3, .grid-4 { grid-template-columns: 1fr; }
-    .grid-2 { grid-template-columns: 1fr; }
-    .col-span-2 { grid-column: span 1; }
-    
+@media (max-width: 1024px) {
     .mobile-nav-toggle {
         display: flex;
     }
@@ -1240,6 +1248,19 @@ a:hover {
     .nav-bar.active {
         display: flex;
     }
+}
+
+@media (max-width: 992px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .admin-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .col-span-2 { grid-column: span 1; }
     
     .hero-title {
         font-size: 2.2rem;

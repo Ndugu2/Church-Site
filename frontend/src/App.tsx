@@ -1,13 +1,30 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import type { Variants } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { supabase } from './supabaseClient';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { Toaster, toast } from 'react-hot-toast';
-import { Users, GraduationCap, Music, Map, Heart, HandHelping } from 'lucide-react';
+import { Users, GraduationCap, Music, Map as MapIcon, Heart, HandHelping, LogOut, User, BookOpen, Calendar, MessageSquare, Award } from 'lucide-react';
+
+// Import new components
+import { LoginForm } from './components/LoginForm';
+import { RegisterForm } from './components/RegisterForm';
+import { BlogPage } from './components/BlogPage';
+import { TestimoniesPage } from './components/TestimoniesPage';
+import { StaffDirectory } from './components/StaffDirectory';
+import { MemberDashboard } from './components/MemberDashboard';
+import { ForumsPage } from './components/ForumsPage';
+import { HymnsPage } from './components/HymnsPage';
+import { CommunityOutreach } from './components/CommunityOutreach';
+import { GoBackToSchool } from './components/GoBackToSchool';
+import { LanguageSwitcher } from './components/LanguageSwitcher';
+import { AnalyticsDashboard } from './components/AnalyticsDashboard';
+import { SabbathProgramme, DEFAULT_SABBATH_PROGRAMMES, type SabbathProgram } from './components/SabbathProgramme';
 
 // --- Animation Variants ---
+const EASE_SMOOTH: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE_SMOOTH } }
 };
 
 const fadeIn: Variants = {
@@ -17,12 +34,12 @@ const fadeIn: Variants = {
 
 const slideLeft: Variants = {
   hidden: { opacity: 0, x: -40 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+  visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: EASE_SMOOTH } }
 };
 
 const slideRight: Variants = {
   hidden: { opacity: 0, x: 40 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+  visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: EASE_SMOOTH } }
 };
 
 const staggerContainer: Variants = {
@@ -32,12 +49,12 @@ const staggerContainer: Variants = {
 
 const staggerItem: Variants = {
   hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: EASE_SMOOTH } }
 };
 
 const scaleIn: Variants = {
   hidden: { opacity: 0, scale: 0.88 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } }
+  visible: { opacity: 1, scale: 1, transition: { duration: 0.5, ease: EASE_SMOOTH } }
 };
 
 const pageTransition: Variants = {
@@ -101,6 +118,67 @@ interface ChurchProject {
   raised_amount: number;
   image_url: string;
   status: string;
+  is_published?: boolean;
+}
+
+interface ProjectHistoryEntry {
+  id: number;
+  project_title: string;
+  action: 'create' | 'update' | 'delete';
+  changed_fields: Record<string, any>;
+  updated_by_username?: string;
+  created_at: string;
+}
+
+type ProjectHistoryActionFilter = 'all' | 'create' | 'update' | 'delete';
+
+const PROJECT_HISTORY_FIELD_LABELS: Record<string, string> = {
+  title: 'Title',
+  category: 'Category',
+  desc: 'Description',
+  goal_amount: 'Goal Amount',
+  raised_amount: 'Raised Amount',
+  image_url: 'Image URL',
+  status: 'Status',
+  is_published: 'Published',
+};
+
+const formatProjectHistoryField = (field: string): string => {
+  if (PROJECT_HISTORY_FIELD_LABELS[field]) return PROJECT_HISTORY_FIELD_LABELS[field];
+  return field
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const formatProjectHistoryValue = (value: unknown): string => {
+  if (value === null || value === undefined || value === '') return 'Empty';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'number') return value.toLocaleString();
+  if (typeof value === 'string') return value;
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
+
+const getHistoryActionStyles = (action: ProjectHistoryEntry['action']) => {
+  if (action === 'create') {
+    return { background: '#dcfce7', color: '#166534' };
+  }
+  if (action === 'delete') {
+    return { background: '#fee2e2', color: '#991b1b' };
+  }
+  return { background: '#e0f2fe', color: '#075985' };
+};
+
+interface GalleryImage {
+  id?: string;
+  album: string;
+  title: string;
+  img_url: string;
+  created_at?: string;
 }
 
 interface ActivityLog {
@@ -108,16 +186,103 @@ interface ActivityLog {
   msg: string;
 }
 
+interface Announcement {
+  id: number;
+  title: string;
+  body: string;
+  date: string;
+  priority: 'high' | 'normal' | 'low';
+  icon: string;
+  slug?: string;
+  is_published?: boolean;
+}
+
+type SabbathProgrammeForm = {
+  date: string;
+  theme: string;
+  sabbathSchoolTime: string;
+  superintendent: string;
+  lessonTitle: string;
+  lessonNumber: number;
+  divineServiceTime: string;
+  songLeader: string;
+  openingPrayer: string;
+  sermonPreacher: string;
+  sermonTitle: string;
+  sermonKeyText: string;
+  sermonSynopsis: string;
+  sermonRole: string;
+  closingPrayer: string;
+  benediction: string;
+  afternoonTime: string;
+  afternoonLeader: string;
+};
+
+const toSabbathProgrammeForm = (programme: SabbathProgram): SabbathProgrammeForm => ({
+  date: programme.date,
+  theme: programme.theme,
+  sabbathSchoolTime: programme.sabbathSchool.time,
+  superintendent: programme.sabbathSchool.superintendent,
+  lessonTitle: programme.sabbathSchool.lessonTitle,
+  lessonNumber: programme.sabbathSchool.lessonNumber,
+  divineServiceTime: programme.divineService.time,
+  songLeader: programme.divineService.songLeader,
+  openingPrayer: programme.divineService.openingPrayer,
+  sermonPreacher: programme.sermon.preacher,
+  sermonTitle: programme.sermon.title,
+  sermonKeyText: programme.sermon.keyText,
+  sermonSynopsis: programme.sermon.synopsis,
+  sermonRole: programme.sermon.role,
+  closingPrayer: programme.closingPrayer,
+  benediction: programme.benediction,
+  afternoonTime: programme.afternoonProgramme.time,
+  afternoonLeader: programme.afternoonProgramme.leader,
+});
+
+const applySabbathProgrammeForm = (base: SabbathProgram, form: SabbathProgrammeForm): SabbathProgram => ({
+  ...base,
+  date: form.date,
+  theme: form.theme,
+  sabbathSchool: {
+    ...base.sabbathSchool,
+    time: form.sabbathSchoolTime,
+    superintendent: form.superintendent,
+    lessonTitle: form.lessonTitle,
+    lessonNumber: Number(form.lessonNumber) || 1,
+  },
+  divineService: {
+    ...base.divineService,
+    time: form.divineServiceTime,
+    songLeader: form.songLeader,
+    openingPrayer: form.openingPrayer,
+  },
+  sermon: {
+    ...base.sermon,
+    preacher: form.sermonPreacher,
+    title: form.sermonTitle,
+    keyText: form.sermonKeyText,
+    synopsis: form.sermonSynopsis,
+    role: form.sermonRole,
+  },
+  closingPrayer: form.closingPrayer,
+  benediction: form.benediction,
+  afternoonProgramme: {
+    ...base.afternoonProgramme,
+    time: form.afternoonTime,
+    leader: form.afternoonLeader,
+  },
+});
+
 // --- Initial Fallback Mock Data ---
 const DEFAULT_LEADERS = [
-  { name: "Pastor John Mwangi", role: "Lead Pastor", bio: "Pastor Mwangi has served the global SDA community for 12 years and has a deep passion for student chaplaincy." },
-  { name: "Pastor Sarah Namubiru", role: "Assistant Pastor", bio: "A graduate of Bugema University's theology department, focused on campus outreach and counselling." },
-  { name: "Elder Caleb Ndikumana", role: "First Elder", bio: "Coordinates board operations, spiritual fellowships, and guest relations for our international members." },
-  { name: "Deaconess Mercy Awori", role: "Head Deaconess", bio: "Leads a team of deaconesses focused on hospitality, visitation, and church neatness." },
-  { name: "Timothy Omondi", role: "Youth Leader", bio: "Organizes student programs, choir coordination, and voluntary missions around the campus." },
-  { name: "Grace Kente", role: "Pathfinder Director", bio: "Guides our pathfinders and adventurers in skill building, community outreach, and scripture memorization." },
-  { name: "Enock Birungi", role: "Treasurer", bio: "Ensures meticulous accounting practices, budget compliance, and transparent reporting." },
-  { name: "Aisha Mukasa", role: "Church Clerk", bio: "Handles memberships, transfers, announcements, and board meeting minutes." }
+  { name: "Kagwa Rogers", role: "Lead Pastor", photo: "/images/kagwa-rogers.jpg", bio: "Pastor Kagwa Rogers has served the global SDA community for many years and has a deep passion for student chaplaincy." },
+  { name: "Khear Hamis", role: "Assistant Pastor", photo: "", bio: "A dedicated servant of the church, focused on campus outreach and counselling." },
+  { name: "Niyomugabo Francis", role: "First Elder", photo: "", bio: "Coordinates board operations, spiritual fellowships, and guest relations for our international members." },
+  { name: "Nabatanzi Faith", role: "Head Deaconess", photo: "", bio: "Leads a team of deaconesses focused on hospitality, visitation, and church neatness." },
+  { name: "Twine Enok", role: "Youth Leader", photo: "", bio: "Organizes student programs, choir coordination, and voluntary missions around the campus." },
+  { name: "Grace Kente", role: "Pathfinder Director", photo: "", bio: "Guides our pathfinders and adventurers in skill building, community outreach, and scripture memorization." },
+  { name: "Ndagire Recheal", role: "Treasurer", photo: "/images/ndagire-recheal.jpg", bio: "Ensures meticulous accounting practices, budget compliance, and transparent reporting." },
+  { name: "Kwagala Esther", role: "Church Clerk", photo: "", bio: "Handles memberships, transfers, announcements, and board meeting minutes." }
 ];
 
 const DEFAULT_MINISTRIES = [
@@ -147,7 +312,7 @@ const DEFAULT_MINISTRIES = [
     title: "Pathfinders & Adventurers",
     short: "Training children and teens for God.",
     desc: "An active scouting-style club focused on physical skills, nature studies, camping, survival guides, and foundational Bible learning for ages 6-18.",
-    icon: <Map size={24} />
+    icon: <MapIcon size={24} />
   },
   {
     id: "women",
@@ -166,10 +331,10 @@ const DEFAULT_MINISTRIES = [
 ];
 
 const DEFAULT_SERMONS: Sermon[] = [
-  { id: 1, title: "The Sanctuary & The Sanctuary Guard", speaker: "Pastor John Mwangi", date: "2026-07-11", passage: "Hebrews 8:1-5", category: "Sabbath Sermons" },
-  { id: 2, title: "Finding Rest in a Restless Campus", speaker: "Pastor Sarah Namubiru", date: "2026-07-04", passage: "Matthew 11:28-30", category: "Sabbath Sermons" },
+  { id: 1, title: "The Sanctuary & The Sanctuary Guard", speaker: "Kagwa Rogers", date: "2026-07-11", passage: "Hebrews 8:1-5", category: "Sabbath Sermons" },
+  { id: 2, title: "Finding Rest in a Restless Campus", speaker: "Khear Hamis", date: "2026-07-04", passage: "Matthew 11:28-30", category: "Sabbath Sermons" },
   { id: 3, title: "Unshakable Faith in Prophetic Times", speaker: "Elder Caleb Ndikumana", date: "2026-06-20", passage: "Daniel 2:44", category: "Week of Prayer" },
-  { id: 4, title: "Stepping into the Waters of Covenant", speaker: "Pastor John Mwangi", date: "2026-06-13", passage: "Romans 6:3-4", category: "Bible Studies" }
+  { id: 4, title: "Stepping into the Waters of Covenant", speaker: "Kagwa Rogers", date: "2026-06-13", passage: "Romans 6:3-4", category: "Bible Studies" }
 ];
 
 const DEFAULT_EVENTS: ChurchEvent[] = [
@@ -263,9 +428,24 @@ const DEFAULT_PRAYERS: PrayerRequest[] = [
   { id: 3, name: "Elder Samuel", content: "Let's pray for the upcoming campus camp meeting outreach program to touch many young souls.", confidential: false }
 ];
 
+const LESSON_VIDEOS = [
+  { week: 1, title: "Week 1: The Foundation of God's Kingdom", date: "2026-07-04", youtubeId: "dQw4w9WgXcQ", desc: "Understanding the eternal covenant and how the sanctuary services reflect the character of God." },
+  { week: 2, title: "Week 2: The Sanctuary and the Covenant", date: "2026-07-11", youtubeId: "dQw4w9WgXcQ", desc: "A deep dive into the earthly sanctuary symbols and their fulfillment in the ministry of Jesus." },
+  { week: 3, title: "Week 3: The Sanctuary Guard & The Holy Place", date: "2026-07-18", youtubeId: "dQw4w9WgXcQ", desc: "Exploring the role of the priests and the daily services in the outer court and the holy place." },
+  { week: 4, title: "Week 4: Judgment and the Most Holy Place", date: "2026-07-25", youtubeId: "dQw4w9WgXcQ", desc: "Understanding the Day of Atonement, the cleansing of the sanctuary, and the work of our High Priest." },
+];
+
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
+  // Authentication States
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('user_token'));
+  const [userEmail, setUserEmail] = useState(localStorage.getItem('user_email') || '');
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [language, setLanguage] = useState(localStorage.getItem('language') || 'en');
 
   // Core Data States
   const [sermons, setSermons] = useState<Sermon[]>(DEFAULT_SERMONS);
@@ -281,6 +461,15 @@ export default function App() {
   const [dailyVerse, setDailyVerse] = useState(BIBLE_VERSES[0]);
   const [selectedSermonCat, setSelectedSermonCat] = useState('all');
   const [selectedGalleryAlbum, setSelectedGalleryAlbum] = useState('all');
+  const [gallery, setGallery] = useState<GalleryImage[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const [galleryUploadForm, setGalleryUploadForm] = useState({ title: '', album: 'Sabbath Worship' });
+  const [galleryUploadFile, setGalleryUploadFile] = useState<File | null>(null);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const [selectedLessonWeek, setSelectedLessonWeek] = useState(3);
+  const [lessonVideos, setLessonVideos] = useState<any[]>(LESSON_VIDEOS);
+  const [addLessonForm, setAddLessonForm] = useState({ week: '', title: '', date: '', youtube_id: '', desc: '' });
+  const galleryFileRef = useRef<HTMLInputElement>(null);
 
   // ── Weekly Discipleship State ──────────────────────────────────────────────
   const getWeekKey = () => {
@@ -393,6 +582,29 @@ export default function App() {
   const [donationForm, setDonationForm] = useState({ amount: '', fund: 'Tithe', method: 'Mobile Money' });
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
   const [eventRegForm, setEventRegForm] = useState({ name: '', email: '', phone: '', notes: '' });
+  const [addProjectForm, setAddProjectForm] = useState({
+    title: '',
+    category: 'Construction',
+    desc: '',
+    goal_amount: '',
+    raised_amount: '0',
+    image_url: '',
+    status: 'Active',
+    is_published: true,
+  });
+  const [projectDrafts, setProjectDrafts] = useState<Record<number, {
+    title: string;
+    category: string;
+    desc: string;
+    goal_amount: string;
+    raised_amount: string;
+    image_url: string;
+    status: string;
+    is_published: boolean;
+  }>>({});
+  const [projectHistoryById, setProjectHistoryById] = useState<Record<number, ProjectHistoryEntry[]>>({});
+  const [openProjectHistoryId, setOpenProjectHistoryId] = useState<number | null>(null);
+  const [projectHistoryFilter, setProjectHistoryFilter] = useState<ProjectHistoryActionFilter>('all');
 
   // Alerts
   const [studySuccess] = useState(false);
@@ -404,13 +616,43 @@ export default function App() {
   // Chat Feed Sim
   const [chatMessages, setChatMessages] = useState([
     { user: "Ruth Atwine", text: "Happy Sabbath everyone! Watching from Kampala." },
-    { user: "Pastor John", text: "Amen, welcome Ruth! Blessed Sabbath." },
+    { user: "Kagwa Rogers", text: "Amen, welcome Ruth! Blessed Sabbath." },
     { user: "David Miller", text: "Greetings from Seattle, USA. So glad to tune in today." }
   ]);
   const [chatInput, setChatInput] = useState('');
 
+  const [sabbathProgrammes, setSabbathProgrammes] = useState<SabbathProgram[]>(DEFAULT_SABBATH_PROGRAMMES);
+  const [sabbathProgramEditor, setSabbathProgramEditor] = useState('');
+  const [sabbathProgramError, setSabbathProgramError] = useState('');
+  const [selectedSabbathProgramIndex, setSelectedSabbathProgramIndex] = useState(0);
+  const [sabbathProgramForm, setSabbathProgramForm] = useState<SabbathProgrammeForm>(() =>
+    toSabbathProgrammeForm(DEFAULT_SABBATH_PROGRAMMES[0])
+  );
+
   // Admin Panel states
   const [activeAdminTab, setActiveAdminTab] = useState('admin-stats');
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(localStorage.getItem('admin_authenticated') === 'true');
+  const [adminLoginForm, setAdminLoginForm] = useState({ username: '', password: '' });
+  const [adminLoginError, setAdminLoginError] = useState('');
+  const [adminLoginLoading, setAdminLoginLoading] = useState(false);
+
+  // Announcements
+  const [announcements, setAnnouncements] = useState<Announcement[]>([
+    { id: 1, title: "Baptism Service — This Sabbath", body: "We will have a special baptism service this Sabbath, 19th July. All baptismal candidates should arrive by 8:30 AM for final preparation.", date: "2026-07-17", priority: "high", icon: "💧" },
+    { id: 2, title: "Church Choir Practice", body: "All choir members are reminded of the special combined rehearsal on Thursday evening at 6:00 PM in the main sanctuary. International Choir to attend.", date: "2026-07-16", priority: "normal", icon: "🎶" },
+    { id: 3, title: "Mid-Year Thanksgiving Offering", body: "The 2nd quarter special project offering will be received this Sabbath. You can also give via mobile money or bank transfer. God bless your stewardship.", date: "2026-07-15", priority: "high", icon: "🙌" },
+    { id: 4, title: "Campus Outreach — Luwero District", body: "Youth volunteers needed for our community health outreach this coming Sunday. Contact Brother Timothy Omondi to register. Transport will be provided.", date: "2026-07-14", priority: "normal", icon: "🌍" },
+    { id: 5, title: "Pathfinder Club Investiture", body: "Pathfinder and Adventurer Club Investiture ceremony is scheduled for Saturday afternoon at 3:00 PM. Parents and guardians are invited to attend.", date: "2026-07-13", priority: "normal", icon: "⭐" },
+    { id: 6, title: "New Member Orientation", body: "Welcome to all new members! A special orientation session will be held next Sabbath after the afternoon service. Light refreshments will be served.", date: "2026-07-12", priority: "low", icon: "👋" },
+  ]);
+  const [addAnnouncementForm, setAddAnnouncementForm] = useState({
+    title: '',
+    body: '',
+    date: '',
+    priority: 'normal',
+    icon: '📣',
+    is_published: true,
+  });
 
   // --- API Sync on Load ---
   useEffect(() => {
@@ -420,6 +662,10 @@ export default function App() {
     fetchBibleStudies();
     fetchDonations();
     fetchProjects();
+    fetchGallery();
+    fetchLessonVideos();
+    fetchSabbathProgrammes();
+    fetchAnnouncements();
   }, []);
 
   // Pre-fill donation fund when navigating to Give from a project
@@ -429,8 +675,69 @@ export default function App() {
     }
   }, [currentRoute, selectedProjectFund]);
 
+  useEffect(() => {
+    localStorage.setItem('admin_authenticated', String(isAdminAuthenticated));
+    if (!isAdminAuthenticated) {
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_username');
+    }
+  }, [isAdminAuthenticated]);
+
+  useEffect(() => {
+    setSabbathProgramEditor(JSON.stringify(sabbathProgrammes, null, 2));
+  }, [sabbathProgrammes]);
+
+  useEffect(() => {
+    if (sabbathProgrammes.length === 0) {
+      return;
+    }
+
+    const safeIndex = Math.min(selectedSabbathProgramIndex, sabbathProgrammes.length - 1);
+    if (safeIndex !== selectedSabbathProgramIndex) {
+      setSelectedSabbathProgramIndex(safeIndex);
+      return;
+    }
+
+    setSabbathProgramForm(toSabbathProgrammeForm(sabbathProgrammes[safeIndex]));
+  }, [sabbathProgrammes, selectedSabbathProgramIndex]);
+
+  useEffect(() => {
+    const nextDrafts: Record<number, {
+      title: string;
+      category: string;
+      desc: string;
+      goal_amount: string;
+      raised_amount: string;
+      image_url: string;
+      status: string;
+      is_published: boolean;
+    }> = {};
+    projects.forEach((proj) => {
+      nextDrafts[proj.id] = {
+        title: proj.title,
+        category: proj.category,
+        desc: proj.desc,
+        goal_amount: String(proj.goal_amount),
+        raised_amount: String(proj.raised_amount),
+        image_url: proj.image_url || '',
+        status: proj.status,
+        is_published: proj.is_published !== false,
+      };
+    });
+    setProjectDrafts(nextDrafts);
+  }, [projects]);
+
   const triggerLog = (msg: string) => {
     setLogs(prev => [{ time: new Date().toLocaleTimeString(), msg }, ...prev]);
+  };
+
+  const getAdminAuthHeaders = (): HeadersInit => {
+    const adminToken = localStorage.getItem('admin_token');
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (adminToken) {
+      headers['Authorization'] = `Token ${adminToken}`;
+    }
+    return headers;
   };
 
   const fetchSermons = async () => {
@@ -438,10 +745,11 @@ export default function App() {
       const res = await fetch(`${API_URL}/sermons/`);
       if (res.ok) {
         const data = await res.json();
-        setSermons(data);
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        setSermons(list.length > 0 ? list : DEFAULT_SERMONS);
       }
     } catch {
-      triggerLog("Django API unavailable. Fallback to mock sermons database.");
+      // Keep fallback data
     }
   };
 
@@ -450,10 +758,11 @@ export default function App() {
       const res = await fetch(`${API_URL}/events/`);
       if (res.ok) {
         const data = await res.json();
-        setEvents(data);
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        setEvents(list.length > 0 ? list : DEFAULT_EVENTS);
       }
     } catch {
-      triggerLog("Django API unavailable. Fallback to mock events database.");
+      // Keep fallback data
     }
   };
 
@@ -462,7 +771,8 @@ export default function App() {
       const res = await fetch(`${API_URL}/prayers/`);
       if (res.ok) {
         const data = await res.json();
-        setPrayers(data.length > 0 ? data : DEFAULT_PRAYERS);
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        setPrayers(list.length > 0 ? list : DEFAULT_PRAYERS);
       }
     } catch {
       // Local fallback
@@ -474,7 +784,8 @@ export default function App() {
       const res = await fetch(`${API_URL}/bible-studies/`);
       if (res.ok) {
         const data = await res.json();
-        setBibleStudies(data);
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        setBibleStudies(list);
       }
     } catch {
       // Local fallback
@@ -483,25 +794,295 @@ export default function App() {
 
   const fetchDonations = async () => {
     try {
-      const res = await fetch(`${API_URL}/donations/`);
+      const res = await fetch(`${API_URL}/payments/`);
       if (res.ok) {
         const data = await res.json();
-        setDonations(data);
+        setDonations(Array.isArray(data) ? data : []);
+      }
+    } catch {
+      // Local fallback
+      setDonations([]);
+    }
+  };
+
+  const fetchProjects = async (adminMode = false) => {
+    try {
+      const res = await fetch(`${API_URL}/projects/`, {
+        headers: adminMode ? getAdminAuthHeaders() : undefined,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        const normalized = list.map((item: any) => ({
+          ...item,
+          goal_amount: Number(item.goal_amount),
+          raised_amount: Number(item.raised_amount),
+        }));
+        setProjects(normalized.length > 0 ? normalized : DEFAULT_PROJECTS);
       }
     } catch {
       // Local fallback
     }
   };
 
-  const fetchProjects = async () => {
+  const fetchProjectHistory = async (projectId: number) => {
+    const res = await fetch(`${API_URL}/projects/${projectId}/history/`, {
+      headers: getAdminAuthHeaders(),
+    });
+    if (!res.ok) {
+      throw new Error('Could not load project history.');
+    }
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.results ?? []);
+    setProjectHistoryById((prev) => ({ ...prev, [projectId]: list }));
+  };
+
+  const mapAnnouncement = (item: any): Announcement => {
+    const priorityFromCategory = item?.scheduled_publish ? 'high' : 'normal';
+    return {
+      id: item.id,
+      title: item.title,
+      body: item.content,
+      date: item.created_at ? String(item.created_at).slice(0, 10) : '',
+      priority: (item.priority as 'high' | 'normal' | 'low') || priorityFromCategory,
+      icon: item.featured_image || '📣',
+      slug: item.slug,
+      is_published: item.is_published,
+    };
+  };
+
+  const fetchAnnouncements = async () => {
     try {
-      const res = await fetch(`${API_URL}/projects/`);
+      const res = await fetch(`${API_URL}/blog/by_category/?category=announcement`);
       if (res.ok) {
         const data = await res.json();
-        setProjects(data.length > 0 ? data : DEFAULT_PROJECTS);
+        const list = Array.isArray(data) ? data : (data.results ?? []);
+        if (list.length > 0) {
+          setAnnouncements(list.map(mapAnnouncement));
+        }
       }
     } catch {
-      // Local fallback
+      // Keep fallback notices
+    }
+  };
+
+  const fetchAdminAnnouncements = async () => {
+    const res = await fetch(`${API_URL}/blog/by_category/?category=announcement`, {
+      headers: getAdminAuthHeaders(),
+    });
+    if (!res.ok) {
+      throw new Error('Could not load announcements.');
+    }
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : (data.results ?? []);
+    setAnnouncements(list.map(mapAnnouncement));
+  };
+
+  const normalizeSabbathProgramme = (item: any): SabbathProgram | null => {
+    const content = item?.content;
+    if (!content || typeof content !== 'object') {
+      return null;
+    }
+    return {
+      ...content,
+      date: content.date || item.service_date,
+      theme: content.theme || item.theme,
+    } as SabbathProgram;
+  };
+
+  const saveSabbathProgrammesToBackend = async (programmes: SabbathProgram[]) => {
+    const res = await fetch(`${API_URL}/sabbath-programmes/`, {
+      method: 'GET',
+      headers: getAdminAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to load existing Sabbath programmes.');
+    }
+
+    const existing = await res.json();
+    const existingList: any[] = Array.isArray(existing) ? existing : (existing.results ?? []);
+    const existingByDate = new globalThis.Map<string, any>(existingList.map((item: any) => [item.service_date, item]));
+    const incomingDates = new Set<string>();
+
+    for (const programme of programmes) {
+      const serviceDate = new Date(programme.date).toString() !== 'Invalid Date'
+        ? new Date(programme.date).toISOString().slice(0, 10)
+        : programme.date;
+      incomingDates.add(serviceDate);
+      const payload = {
+        service_date: serviceDate,
+        theme: programme.theme,
+        content: programme,
+        is_published: true,
+      };
+      const existingItem = existingByDate.get(serviceDate);
+      const url = existingItem ? `${API_URL}/sabbath-programmes/${existingItem.id}/` : `${API_URL}/sabbath-programmes/`;
+      const method = existingItem ? 'PUT' : 'POST';
+      const saveRes = await fetch(url, {
+        method,
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (!saveRes.ok) {
+        throw new Error(`Failed to save Sabbath programme for ${programme.date}.`);
+      }
+    }
+
+    for (const item of existingList) {
+      if (!incomingDates.has(item.service_date)) {
+        await fetch(`${API_URL}/sabbath-programmes/${item.id}/`, {
+          method: 'DELETE',
+          headers: getAdminAuthHeaders(),
+        });
+      }
+    }
+  };
+
+  const fetchSabbathProgrammes = async () => {
+    try {
+      const res = await fetch(`${API_URL}/sabbath-programmes/`);
+      if (!res.ok) {
+        throw new Error('Failed to fetch Sabbath programmes.');
+      }
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : (data.results ?? []);
+      const mapped = list.map(normalizeSabbathProgramme).filter(Boolean) as SabbathProgram[];
+      if (mapped.length > 0) {
+        setSabbathProgrammes(mapped);
+        return;
+      }
+
+      if (isAdminAuthenticated) {
+        await saveSabbathProgrammesToBackend(DEFAULT_SABBATH_PROGRAMMES);
+        setSabbathProgrammes(DEFAULT_SABBATH_PROGRAMMES);
+      }
+    } catch {
+      setSabbathProgrammes(DEFAULT_SABBATH_PROGRAMMES);
+    }
+  };
+
+  const fetchGallery = async () => {
+    setGalleryLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('gallery')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data && data.length > 0) {
+        setGallery(data as GalleryImage[]);
+      }
+    } catch {
+      // fallback to DEFAULT_GALLERY
+    } finally {
+      setGalleryLoading(false);
+    }
+  };
+
+  const fetchLessonVideos = async () => {
+    try {
+      const res = await fetch(`${API_URL}/lessons/`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.length > 0) {
+          // Map backend snake_case fields to frontend camelCase
+          setLessonVideos(data.map((v: any) => ({
+            week: v.week,
+            title: v.title,
+            date: v.date,
+            youtubeId: v.youtube_id,
+            desc: v.desc,
+            id: v.id,
+          })));
+          setSelectedLessonWeek(data[0].week);
+        }
+      }
+    } catch {
+      // Fallback to LESSON_VIDEOS constant
+    }
+  };
+
+  const handleAdminAddLessonVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { week, title, date, youtube_id, desc } = addLessonForm;
+    if (!week || !title || !date || !youtube_id || !desc) {
+      toast.error('Please fill in all fields.');
+      return;
+    }
+
+    // Extract YouTube ID if full URL was pasted
+    let ytId = youtube_id.trim();
+    const ytMatch = ytId.match(/(?:v=|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    if (ytMatch) ytId = ytMatch[1];
+
+    try {
+      const res = await fetch(`${API_URL}/lessons/`, {
+        method: 'POST',
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify({ week: parseInt(week), title, date, youtube_id: ytId, desc }),
+      });
+      if (res.ok) {
+        fetchLessonVideos();
+        toast.success(`Week ${week} lesson video added!`);
+      } else {
+        const err = await res.json();
+        toast.error(err.week?.[0] || 'Error saving lesson video.');
+        return;
+      }
+    } catch {
+      // Offline fallback: add locally
+      const newVideo = { week: parseInt(week), title, date, youtubeId: ytId, desc, id: Date.now() };
+      setLessonVideos(prev => [...prev, newVideo].sort((a, b) => a.week - b.week));
+      toast.success(`Week ${week} lesson video added (offline mode).`);
+    }
+    setAddLessonForm({ week: '', title: '', date: '', youtube_id: '', desc: '' });
+    triggerLog(`Lesson Week ${week} video uploaded: "${title}"`);
+  };
+
+  const handleAdminDeleteLessonVideo = async (id: number, week: number) => {
+    if (!window.confirm(`Remove Week ${week} lesson video?`)) return;
+    try {
+      await fetch(`${API_URL}/lessons/${id}/`, { method: 'DELETE', headers: getAdminAuthHeaders() });
+      fetchLessonVideos();
+    } catch {
+      setLessonVideos(prev => prev.filter(v => v.id !== id));
+    }
+    triggerLog(`Lesson Week ${week} video removed.`);
+    toast.success(`Week ${week} video removed.`);
+  };
+
+  const handleGalleryUpload = async (e: React.FormEvent) => {
+
+    e.preventDefault();
+    if (!galleryUploadFile) { toast.error('Please select an image file.'); return; }
+    setGalleryUploading(true);
+    try {
+      const fileName = `${Date.now()}-${galleryUploadFile.name}`;
+      const { error: uploadError } = await supabase.storage
+        .from('church-gallery')
+        .upload(fileName, galleryUploadFile, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('church-gallery').getPublicUrl(fileName);
+      const publicUrl = urlData.publicUrl;
+
+      const { error: insertError } = await supabase
+        .from('gallery')
+        .insert([{ album: galleryUploadForm.album, title: galleryUploadForm.title, img_url: publicUrl }]);
+
+      if (insertError) throw insertError;
+
+      toast.success('Image uploaded to gallery successfully! 🎉');
+      setGalleryUploadForm({ title: '', album: 'Sabbath Worship' });
+      setGalleryUploadFile(null);
+      if (galleryFileRef.current) galleryFileRef.current.value = '';
+      fetchGallery();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Upload failed. Check your Supabase bucket permissions.';
+      toast.error(message);
+    } finally {
+      setGalleryUploading(false);
     }
   };
 
@@ -606,7 +1187,7 @@ export default function App() {
     try {
       const res = await fetch(`${API_URL}/events/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({ title, date, location, desc })
       });
       if (res.ok) {
@@ -631,7 +1212,7 @@ export default function App() {
     try {
       const res = await fetch(`${API_URL}/sermons/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({ title, speaker, date, passage, category })
       });
       if (res.ok) {
@@ -652,7 +1233,7 @@ export default function App() {
   // Delete Handlers
   const handleAdminDeleteEvent = async (id: number) => {
     try {
-      await fetch(`${API_URL}/events/${id}/`, { method: 'DELETE' });
+      await fetch(`${API_URL}/events/${id}/`, { method: 'DELETE', headers: getAdminAuthHeaders() });
       fetchEvents();
     } catch {
       setEvents(prev => prev.filter(e => e.id !== id));
@@ -662,7 +1243,7 @@ export default function App() {
 
   const handleAdminDeleteSermon = async (id: number) => {
     try {
-      await fetch(`${API_URL}/sermons/${id}/`, { method: 'DELETE' });
+      await fetch(`${API_URL}/sermons/${id}/`, { method: 'DELETE', headers: getAdminAuthHeaders() });
       fetchSermons();
     } catch {
       setSermons(prev => prev.filter(s => s.id !== id));
@@ -672,7 +1253,7 @@ export default function App() {
 
   const handleAdminDeletePrayer = async (id: number) => {
     try {
-      await fetch(`${API_URL}/prayers/${id}/`, { method: 'DELETE' });
+      await fetch(`${API_URL}/prayers/${id}/`, { method: 'DELETE', headers: getAdminAuthHeaders() });
       fetchPrayers();
     } catch {
       setPrayers(prev => prev.filter(p => p.id !== id));
@@ -682,7 +1263,7 @@ export default function App() {
 
   const handleAdminDeleteStudy = async (id: number) => {
     try {
-      await fetch(`${API_URL}/bible-studies/${id}/`, { method: 'DELETE' });
+      await fetch(`${API_URL}/bible-studies/${id}/`, { method: 'DELETE', headers: getAdminAuthHeaders() });
       fetchBibleStudies();
     } catch {
       setBibleStudies(prev => prev.filter(b => b.id !== id));
@@ -690,16 +1271,400 @@ export default function App() {
     triggerLog(`Deleted Bible Study registration ID: ${id}`);
   };
 
-  // Filter systems
-  const filteredSermons = selectedSermonCat === 'all' 
-    ? sermons 
-    : sermons.filter(s => s.category === selectedSermonCat);
+  const handleAdminAddProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload = {
+      title: addProjectForm.title.trim(),
+      category: addProjectForm.category,
+      desc: addProjectForm.desc.trim(),
+      goal_amount: Number(addProjectForm.goal_amount),
+      raised_amount: Number(addProjectForm.raised_amount || '0'),
+      image_url: addProjectForm.image_url.trim(),
+      status: addProjectForm.status,
+      is_published: addProjectForm.is_published,
+    };
 
+    if (!payload.title || !payload.desc || !payload.goal_amount || payload.goal_amount <= 0) {
+      toast.error('Please provide title, description, and a valid goal amount.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/projects/`, {
+        method: 'POST',
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error();
+
+      await fetchProjects(true);
+      setAddProjectForm({
+        title: '',
+        category: 'Construction',
+        desc: '',
+        goal_amount: '',
+        raised_amount: '0',
+        image_url: '',
+        status: 'Active',
+        is_published: true,
+      });
+      triggerLog(`Project added: ${payload.title}`);
+      toast.success('Project added successfully.');
+    } catch {
+      toast.error('Could not create project.');
+    }
+  };
+
+  const handleAdminUpdateProject = async (id: number) => {
+    const draft = projectDrafts[id];
+    if (!draft) return;
+
+    const raisedAmount = Number(draft.raised_amount);
+    const goalAmount = Number(draft.goal_amount);
+    if (Number.isNaN(raisedAmount) || raisedAmount < 0 || Number.isNaN(goalAmount) || goalAmount <= 0) {
+      toast.error('Goal and raised amounts must be valid numbers.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/projects/${id}/`, {
+        method: 'PATCH',
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify({
+          title: draft.title.trim(),
+          category: draft.category,
+          desc: draft.desc.trim(),
+          goal_amount: goalAmount,
+          raised_amount: raisedAmount,
+          image_url: draft.image_url.trim(),
+          status: draft.status,
+          is_published: draft.is_published,
+        }),
+      });
+      if (!res.ok) throw new Error();
+
+      await fetchProjects(true);
+      if (openProjectHistoryId === id) {
+        await fetchProjectHistory(id);
+      }
+      triggerLog(`Project updated: ID ${id}`);
+      toast.success('Project updated successfully.');
+    } catch {
+      toast.error('Could not update project.');
+    }
+  };
+
+  const handleAdminDeleteProject = async (id: number) => {
+    if (!window.confirm('Delete this project? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`${API_URL}/projects/${id}/`, {
+        method: 'DELETE',
+        headers: getAdminAuthHeaders(),
+      });
+      if (!res.ok) throw new Error();
+
+      await fetchProjects(true);
+      setProjectHistoryById((prev) => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      });
+      if (openProjectHistoryId === id) {
+        setOpenProjectHistoryId(null);
+      }
+      triggerLog(`Project deleted: ID ${id}`);
+      toast.success('Project removed.');
+    } catch {
+      toast.error('Could not delete project.');
+    }
+  };
+
+  const handleAdminQuickToggleProjectPublish = async (id: number) => {
+    const project = projects.find((item) => item.id === id);
+    if (!project) return;
+
+    const nextPublished = !(project.is_published !== false);
+
+    try {
+      const res = await fetch(`${API_URL}/projects/${id}/`, {
+        method: 'PATCH',
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify({ is_published: nextPublished }),
+      });
+      if (!res.ok) throw new Error();
+
+      await fetchProjects(true);
+      if (openProjectHistoryId === id) {
+        await fetchProjectHistory(id);
+      }
+      setProjectDrafts((prev) => ({
+        ...prev,
+        [id]: {
+          ...(prev[id] ?? {
+            title: project.title,
+            category: project.category,
+            desc: project.desc,
+            goal_amount: String(project.goal_amount),
+            raised_amount: String(project.raised_amount),
+            image_url: project.image_url || '',
+            status: project.status,
+            is_published: project.is_published !== false,
+          }),
+          is_published: nextPublished,
+        },
+      }));
+      triggerLog(`${nextPublished ? 'Published' : 'Hidden'} project: ${project.title}`);
+      toast.success(nextPublished ? 'Project published to viewers.' : 'Project hidden from viewers.');
+    } catch {
+      toast.error('Could not update project visibility.');
+    }
+  };
+
+  const handleToggleProjectHistory = async (id: number) => {
+    if (openProjectHistoryId === id) {
+      setOpenProjectHistoryId(null);
+      return;
+    }
+
+    try {
+      await fetchProjectHistory(id);
+      setOpenProjectHistoryId(id);
+    } catch {
+      toast.error('Could not load project history.');
+    }
+  };
+
+  const handleAdminAddAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { title, body, date, priority, icon, is_published } = addAnnouncementForm;
+    if (!title || !body || !date) {
+      toast.error('Please fill in title, message, and date.');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/blog/`, {
+        method: 'POST',
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify({
+          title,
+          content: body,
+          category: 'announcement',
+          featured_image: icon,
+          is_published,
+          scheduled_publish: priority === 'high' ? new Date().toISOString() : null,
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error();
+      }
+
+      await fetchAdminAnnouncements();
+      setAddAnnouncementForm({ title: '', body: '', date: '', priority: 'normal', icon: '📣', is_published: true });
+      triggerLog(`Announcement published: ${title}`);
+      toast.success('Announcement saved successfully.');
+    } catch {
+      toast.error('Could not save announcement.');
+    }
+  };
+
+  const handleAdminDeleteAnnouncement = async (id: number) => {
+    try {
+      await fetch(`${API_URL}/blog/${id}/`, { method: 'DELETE', headers: getAdminAuthHeaders() });
+      await fetchAdminAnnouncements();
+      triggerLog(`Announcement removed: ${id}`);
+      toast.success('Announcement removed.');
+    } catch {
+      toast.error('Could not remove announcement.');
+    }
+  };
+
+  const handleSaveSabbathProgrammes = () => {
+    setSabbathProgramError('');
+    try {
+      const parsed = JSON.parse(sabbathProgramEditor);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        setSabbathProgramError('Programme data must be a non-empty JSON array.');
+        return;
+      }
+
+      const invalid = parsed.find(
+        (item: any) =>
+          !item ||
+          typeof item !== 'object' ||
+          typeof item.date !== 'string' ||
+          typeof item.theme !== 'string' ||
+          !item.sermon ||
+          typeof item.sermon.preacher !== 'string' ||
+          typeof item.sermon.title !== 'string'
+      );
+
+      if (invalid) {
+        setSabbathProgramError('Each programme needs at least: date, theme, sermon.preacher, and sermon.title.');
+        return;
+      }
+
+      void (async () => {
+        try {
+          await saveSabbathProgrammesToBackend(parsed as SabbathProgram[]);
+          await fetchSabbathProgrammes();
+          triggerLog(`Sabbath programmes updated (${parsed.length} entries).`);
+          toast.success('Sabbath programme updated successfully.');
+        } catch {
+          setSabbathProgramError('Could not save programme to backend.');
+        }
+      })();
+    } catch {
+      setSabbathProgramError('Invalid JSON format. Please fix syntax and try again.');
+    }
+  };
+
+  const handleResetSabbathProgrammes = () => {
+    void (async () => {
+      try {
+        await saveSabbathProgrammesToBackend(DEFAULT_SABBATH_PROGRAMMES);
+        await fetchSabbathProgrammes();
+        setSabbathProgramError('');
+        triggerLog('Sabbath programmes reset to default template.');
+        toast('Sabbath programme reset to default.');
+      } catch {
+        setSabbathProgramError('Could not reset programme in backend.');
+      }
+    })();
+  };
+
+  const handleSelectSabbathProgramme = (index: number) => {
+    setSelectedSabbathProgramIndex(index);
+    setSabbathProgramError('');
+  };
+
+  const handleSaveSabbathProgrammeForm = () => {
+    if (!sabbathProgramForm.date.trim() || !sabbathProgramForm.theme.trim() || !sabbathProgramForm.sermonPreacher.trim() || !sabbathProgramForm.sermonTitle.trim()) {
+      setSabbathProgramError('Date, theme, sermon preacher, and sermon title are required.');
+      return;
+    }
+
+    const nextProgrammes = sabbathProgrammes.map((item, idx) =>
+      idx === selectedSabbathProgramIndex ? applySabbathProgrammeForm(item, sabbathProgramForm) : item
+    );
+
+    void (async () => {
+      try {
+        await saveSabbathProgrammesToBackend(nextProgrammes);
+        await fetchSabbathProgrammes();
+        setSabbathProgramError('');
+        triggerLog(`Sabbath programme entry updated: ${sabbathProgramForm.date}`);
+        toast.success('Sabbath programme information saved.');
+      } catch {
+        setSabbathProgramError('Could not save programme information to backend.');
+      }
+    })();
+  };
+
+  const handleAddSabbathProgramme = () => {
+    const base = sabbathProgrammes[selectedSabbathProgramIndex] || DEFAULT_SABBATH_PROGRAMMES[0];
+    const clone: SabbathProgram = JSON.parse(JSON.stringify(base));
+    clone.date = `Sabbath, ${new Date().toLocaleDateString()}`;
+    clone.theme = 'New Sabbath Theme';
+    clone.sermon.title = 'New Sermon Title';
+    clone.sermon.preacher = 'Preacher Name';
+
+    const nextProgrammes = [...sabbathProgrammes, clone];
+
+    void (async () => {
+      try {
+        await saveSabbathProgrammesToBackend(nextProgrammes);
+        await fetchSabbathProgrammes();
+        setSelectedSabbathProgramIndex(nextProgrammes.length - 1);
+        setSabbathProgramError('');
+        triggerLog('New Sabbath programme entry created.');
+        toast.success('New Sabbath programme entry added.');
+      } catch {
+        setSabbathProgramError('Could not add new programme entry to backend.');
+      }
+    })();
+  };
+
+  const handleDeleteSabbathProgramme = () => {
+    if (sabbathProgrammes.length <= 1) {
+      setSabbathProgramError('At least one programme entry must remain.');
+      return;
+    }
+
+    const removingDate = sabbathProgrammes[selectedSabbathProgramIndex]?.date || 'selected entry';
+    const nextProgrammes = sabbathProgrammes.filter((_, idx) => idx !== selectedSabbathProgramIndex);
+
+    void (async () => {
+      try {
+        await saveSabbathProgrammesToBackend(nextProgrammes);
+        await fetchSabbathProgrammes();
+        setSelectedSabbathProgramIndex(prev => Math.max(0, prev - 1));
+        setSabbathProgramError('');
+        triggerLog(`Sabbath programme entry removed: ${removingDate}`);
+        toast('Sabbath programme entry removed.');
+      } catch {
+        setSabbathProgramError('Could not remove programme entry from backend.');
+      }
+    })();
+  };
+
+  // Filter systems
+  const filteredSermons = sermons
+    .filter((s: Sermon) => selectedSermonCat === 'all' || s.category === selectedSermonCat);
+
+  const gallerySource = gallery.length > 0 ? gallery : DEFAULT_GALLERY.map(g => ({ ...g, img_url: g.img }));
   const filteredGallery = selectedGalleryAlbum === 'all' 
-    ? DEFAULT_GALLERY 
-    : DEFAULT_GALLERY.filter(g => g.album === selectedGalleryAlbum);
+    ? gallerySource 
+    : gallerySource.filter(g => g.album === selectedGalleryAlbum);
 
   const totalDonations = donations.reduce((sum, item) => sum + item.amount, 0);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminLoginLoading(true);
+    setAdminLoginError('');
+    try {
+      const res = await fetch(`${API_URL}/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(adminLoginForm),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (!data?.is_staff) {
+          setAdminLoginError('Access denied. This account is not an administrator.');
+          setIsAdminAuthenticated(false);
+          return;
+        }
+        if (data?.token) {
+          localStorage.setItem('admin_token', data.token);
+        }
+        localStorage.setItem('admin_username', data?.username || adminLoginForm.username);
+        setIsAdminAuthenticated(true);
+        fetchAdminAnnouncements();
+        fetchProjects(true);
+        triggerLog(`Admin logged in: ${data?.username || adminLoginForm.username}`);
+        toast.success('Welcome back, Administrator!');
+      } else {
+        setAdminLoginError(data?.error || 'Invalid username or password. Please try again.');
+      }
+    } catch {
+      setAdminLoginError('Cannot connect to server. Please check backend API connection.');
+    } finally {
+      setAdminLoginLoading(false);
+    }
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminAuthenticated(false);
+    setAdminLoginForm({ username: '', password: '' });
+    setOpenProjectHistoryId(null);
+    setCurrentRoute('home');
+    fetchProjects();
+    toast('You have been signed out of the admin portal.');
+  };
+
 
   return (
     <div>
@@ -739,37 +1704,287 @@ export default function App() {
             </div>
           </a>
           <nav className={`nav-bar ${mobileMenuOpen ? 'active' : ''}`}>
-            {[
-              { route: 'home', label: 'Home' },
-              { route: 'about', label: 'About' },
-              { route: 'ministries', label: 'Ministries' },
-              { route: 'sermons', label: 'Sermons' },
-              { route: 'events', label: 'Events' },
-              { route: 'gallery', label: 'Gallery' },
-              { route: 'bible-study', label: 'Bible Study' },
-              { route: 'prayer-requests', label: 'Prayer' },
-              { route: 'projects', label: 'Projects' },
-              { route: 'give', label: 'Give' },
-              { route: 'contact', label: 'Contact' },
-            ].map(({ route, label }) => (
-              <button
-                key={route}
-                onClick={() => { setCurrentRoute(route); setMobileMenuOpen(false); }}
-                className={`nav-link ${currentRoute === route ? 'active' : ''}`}
-                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-              >
-                {label}
-              </button>
-            ))}
+            {/* Home */}
+            <button
+              onClick={() => { setCurrentRoute('home'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+              className={`nav-link ${currentRoute === 'home' ? 'active' : ''}`}
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              Home
+            </button>
 
+            {/* Sermons Dropdown */}
+            <div className="nav-dropdown" onMouseLeave={() => setOpenDropdown(null)}>
+              <button
+                onClick={() => setOpenDropdown(openDropdown === 'sermons' ? null : 'sermons')}
+                onMouseEnter={() => setOpenDropdown('sermons')}
+                className={`nav-link ${['sermons', 'sabbath-programme'].includes(currentRoute) ? 'active' : ''}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                Sermons
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" style={{ transition: 'transform 0.3s', transform: openDropdown === 'sermons' ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  <path d="M2 4L6 8L10 4" />
+                </svg>
+              </button>
+              {openDropdown === 'sermons' && (
+                <div className="dropdown-menu" onMouseEnter={() => setOpenDropdown('sermons')}>
+                  <button
+                    onClick={() => { setCurrentRoute('sermons'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'sermons' ? 'active' : ''}`}
+                  >
+                    <MessageSquare size={18} />
+                    <span>Sermon Archive</span>
+                  </button>
+                  <button
+                    onClick={() => { setCurrentRoute('sabbath-programme'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'sabbath-programme' ? 'active' : ''}`}
+                  >
+                    <Calendar size={18} />
+                    <span>Sabbath Programme</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Bible Study */}
+            <button
+              onClick={() => { setCurrentRoute('bible-study'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+              className={`nav-link ${currentRoute === 'bible-study' ? 'active' : ''}`}
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              Bible Study
+            </button>
+
+            {/* Prayer Dropdown */}
+            <div className="nav-dropdown" onMouseLeave={() => setOpenDropdown(null)}>
+              <button
+                onClick={() => setOpenDropdown(openDropdown === 'prayer' ? null : 'prayer')}
+                onMouseEnter={() => setOpenDropdown('prayer')}
+                className={`nav-link ${['prayer-requests', 'testimonies'].includes(currentRoute) ? 'active' : ''}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                Prayer
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" style={{ transition: 'transform 0.3s', transform: openDropdown === 'prayer' ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  <path d="M2 4L6 8L10 4" />
+                </svg>
+              </button>
+              {openDropdown === 'prayer' && (
+                <div className="dropdown-menu">
+                  <button
+                    onClick={() => { setCurrentRoute('prayer-requests'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'prayer-requests' ? 'active' : ''}`}
+                  >
+                    <Heart size={18} />
+                    <span>Prayer Requests</span>
+                  </button>
+                  <button
+                    onClick={() => { setCurrentRoute('testimonies'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'testimonies' ? 'active' : ''}`}
+                  >
+                    <BookOpen size={18} />
+                    <span>Testimonies</span>
+                  </button>
+                  <button
+                    onClick={() => { setCurrentRoute('hymns'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'hymns' ? 'active' : ''}`}
+                  >
+                    <Music size={18} />
+                    <span>Hymns</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Community Dropdown */}
+            <div className="nav-dropdown" onMouseLeave={() => setOpenDropdown(null)}>
+              <button
+                onClick={() => setOpenDropdown(openDropdown === 'community' ? null : 'community')}
+                onMouseEnter={() => setOpenDropdown('community')}
+                className={`nav-link ${['events', 'forums', 'ministries', 'gallery', 'community-outreach', 'go-back-to-school'].includes(currentRoute) ? 'active' : ''}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                Community
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" style={{ transition: 'transform 0.3s', transform: openDropdown === 'community' ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  <path d="M2 4L6 8L10 4" />
+                </svg>
+              </button>
+              {openDropdown === 'community' && (
+                <div className="dropdown-menu">
+                  <button
+                    onClick={() => { setCurrentRoute('events'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'events' ? 'active' : ''}`}
+                  >
+                    <Calendar size={18} />
+                    <span>Events</span>
+                  </button>
+                  <button
+                    onClick={() => { setCurrentRoute('forums'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'forums' ? 'active' : ''}`}
+                  >
+                    <MessageSquare size={18} />
+                    <span>Forums</span>
+                  </button>
+                  <button
+                    onClick={() => { setCurrentRoute('ministries'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'ministries' ? 'active' : ''}`}
+                  >
+                    <Users size={18} />
+                    <span>Ministries</span>
+                  </button>
+                  <button
+                    onClick={() => { setCurrentRoute('community-outreach'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'community-outreach' ? 'active' : ''}`}
+                  >
+                    <HandHelping size={18} />
+                    <span>Community Outreach</span>
+                  </button>
+                  <button
+                    onClick={() => { setCurrentRoute('gallery'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'gallery' ? 'active' : ''}`}
+                  >
+                    <MapIcon size={18} />
+                    <span>Gallery</span>
+                  </button>
+                  <button
+                    onClick={() => { setCurrentRoute('go-back-to-school'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'go-back-to-school' ? 'active' : ''}`}
+                  >
+                    <Award size={18} />
+                    <span>Go Back to School</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Notices */}
+            <button
+              onClick={() => { setCurrentRoute('announcements'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+              className={`nav-link ${currentRoute === 'announcements' ? 'active' : ''}`}
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              Notices
+            </button>
+
+            {/* About Us Dropdown */}
+            <div className="nav-dropdown" onMouseLeave={() => setOpenDropdown(null)}>
+              <button
+                onClick={() => setOpenDropdown(openDropdown === 'about' ? null : 'about')}
+                onMouseEnter={() => setOpenDropdown('about')}
+                className={`nav-link ${['about', 'blog', 'staff', 'contact'].includes(currentRoute) ? 'active' : ''}`}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                About Us
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" style={{ transition: 'transform 0.3s', transform: openDropdown === 'about' ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  <path d="M2 4L6 8L10 4" />
+                </svg>
+              </button>
+              {openDropdown === 'about' && (
+                <div className="dropdown-menu">
+                  <button
+                    onClick={() => { setCurrentRoute('about'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'about' ? 'active' : ''}`}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Our Church
+                  </button>
+                  <button
+                    onClick={() => { setCurrentRoute('staff'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'staff' ? 'active' : ''}`}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Leadership & Staff
+                  </button>
+                  <button
+                    onClick={() => { setCurrentRoute('blog'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'blog' ? 'active' : ''}`}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Blog
+                  </button>
+                  <button
+                    onClick={() => { setCurrentRoute('contact'); setMobileMenuOpen(false); setOpenDropdown(null); }}
+                    className={`dropdown-item ${currentRoute === 'contact' ? 'active' : ''}`}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Contact Us
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Give Button */}
             <button 
-              onClick={() => { setCurrentRoute('watch-live'); setMobileMenuOpen(false); }} 
+              onClick={() => { setCurrentRoute('give'); setMobileMenuOpen(false); setOpenDropdown(null); }} 
+              className="nav-link give-btn"
+              style={{ border: 'none', cursor: 'pointer', fontWeight: '700', background: 'linear-gradient(135deg, #D4AF37 0%, #C5A028 100%)', color: '#1E3A8A' }}
+            >
+              Give
+            </button>
+
+            {/* Watch Live Button */}
+            <button 
+              onClick={() => { setCurrentRoute('watch-live'); setMobileMenuOpen(false); setOpenDropdown(null); }} 
               className="nav-link watch-live-btn"
               style={{ border: 'none', cursor: 'pointer' }}
             >
               <span className="pulse-dot"></span>
               Watch Live
             </button>
+
+            {/* Auth & Language Controls */}
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginLeft: '1rem', borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '1rem' }}>
+              <LanguageSwitcher currentLanguage={language} onLanguageChange={(lang) => { setLanguage(lang); localStorage.setItem('language', lang); }} />
+              
+              {isLoggedIn ? (
+                <>
+                  <button
+                    onClick={() => setCurrentRoute('dashboard')}
+                    className="nav-link"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    <User size={18} />
+                    Dashboard
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsLoggedIn(false);
+                      localStorage.removeItem('user_token');
+                      localStorage.removeItem('user_email');
+                      setCurrentRoute('home');
+                      toast.success('Logged out successfully');
+                    }}
+                    className="nav-link"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    <LogOut size={18} />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => { setAuthMode('login'); setShowAuthModal(true); }}
+                    className="nav-link"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={() => { setAuthMode('register'); setShowAuthModal(true); }}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      background: '#d4a574',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Register
+                  </button>
+                </>
+              )}
+            </div>
           </nav>
           <button className="mobile-nav-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             <span></span>
@@ -782,7 +1997,7 @@ export default function App() {
       {/* Content wrapper */}
       <main className="content-wrapper">
         
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
         {/* ================= HOME VIEW ================= */}
         {currentRoute === 'home' && (
           <motion.div key="home" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
@@ -833,15 +2048,19 @@ export default function App() {
               <motion.div className="container grid grid-2 gap-4" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}>
                 <motion.div className="pastor-welcome-card card" variants={slideLeft}>
                   <div className="pastor-img-placeholder">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
+                    {DEFAULT_LEADERS[0].photo ? (
+                      <img src={DEFAULT_LEADERS[0].photo} alt="Kagwa Rogers" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    ) : (
+                      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    )}
                   </div>
                   <div className="pastor-greeting">
                     <h2 className="section-title">Welcome from our Pastor</h2>
                     <p className="pastor-quote">"Greetings in the matchless name of our Lord and Savior Jesus Christ! Whether you are a student at Bugema University, a member of the local community, or visiting from abroad, we welcome you to our international family of faith. Together, we seek to grow in grace, serve our community, and share the hope of Christ's soon return."</p>
-                    <p className="pastor-signature">- Pastor John Mwangi, Lead Pastor</p>
+                    <p className="pastor-signature">- Kagwa Rogers, Lead Pastor</p>
                   </div>
                 </motion.div>
                 
@@ -1155,10 +2374,14 @@ export default function App() {
                   {DEFAULT_LEADERS.map(l => (
                     <motion.div key={l.name} className="leader-card card" variants={staggerItem} whileHover={{ y: -5, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.12)' }}>
                       <div className="leader-avatar-mock">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
+                        {l.photo ? (
+                          <img src={l.photo} alt={l.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                        ) : (
+                          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                          </svg>
+                        )}
                       </div>
                       <div className="leader-name">{l.name}</div>
                       <div className="leader-role">{l.role}</div>
@@ -1223,8 +2446,7 @@ export default function App() {
                 </div>
 
                 <motion.div className="grid grid-3 gap-3 margin-top-3" variants={staggerContainer} initial="hidden" animate="visible">
-                  <AnimatePresence mode="wait">
-                  {filteredSermons.map(s => (
+                  {Array.isArray(filteredSermons) && filteredSermons.map(s => (
                     <motion.div key={s.id} className="card sermon-card" variants={staggerItem} layout whileHover={{ y: -4 }}>
                       <span className="badge badge-accent">{s.category}</span>
                       <h3 className="margin-top-2">{s.title}</h3>
@@ -1236,10 +2458,16 @@ export default function App() {
                       </div>
                     </motion.div>
                   ))}
-                  </AnimatePresence>
                 </motion.div>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* ================= SABBATH PROGRAMME VIEW ================= */}
+        {currentRoute === 'sabbath-programme' && (
+          <motion.div key="sabbath-programme" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <SabbathProgramme programmesData={sabbathProgrammes} />
           </motion.div>
         )}
 
@@ -1256,7 +2484,7 @@ export default function App() {
             <div className="section-padding">
               <div className="container">
                 <motion.div className="grid grid-2 gap-4" variants={staggerContainer} initial="hidden" animate="visible">
-                  {events.map(e => (
+                  {(Array.isArray(events) ? events : DEFAULT_EVENTS).map(e => (
                     <motion.div key={e.id} className="card event-card" variants={staggerItem} whileHover={{ y: -5 }}>
                       <div className="event-banner-placeholder">
                         {e.title}
@@ -1274,6 +2502,20 @@ export default function App() {
           </motion.div>
         )}
 
+        {/* ================= COMMUNITY OUTREACH VIEW ================= */}
+        {currentRoute === 'community-outreach' && (
+          <motion.div key="community-outreach" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <CommunityOutreach />
+          </motion.div>
+        )}
+
+        {/* ================= GO BACK TO SCHOOL VIEW ================= */}
+        {currentRoute === 'go-back-to-school' && (
+          <motion.div key="go-back-to-school" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <GoBackToSchool />
+          </motion.div>
+        )}
+
         {/* ================= GALLERY VIEW ================= */}
         {currentRoute === 'gallery' && (
           <motion.div key="gallery" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
@@ -1287,7 +2529,7 @@ export default function App() {
             <div className="section-padding">
               <div className="container">
                 <div className="gallery-albums">
-                  {['all', 'Sabbath Worship', 'Baptism', 'Graduation Sabbath', 'Youth Camp', 'Choir', 'Community Outreach'].map(album => (
+                  {['all', ...Array.from(new Set(gallerySource.map(g => g.album)))].map(album => (
                     <button 
                       key={album} 
                       onClick={() => setSelectedGalleryAlbum(album)} 
@@ -1298,11 +2540,17 @@ export default function App() {
                   ))}
                 </div>
 
+                {galleryLoading && (
+                  <div className="text-center margin-top-3" style={{ padding: '3rem', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📸</div>
+                    <p>Loading photos from cloud...</p>
+                  </div>
+                )}
                 <motion.div className="grid grid-3 gap-2 margin-top-3" variants={staggerContainer} initial="hidden" animate="visible">
                   <AnimatePresence mode="wait">
                   {filteredGallery.map((g, i) => (
                     <motion.div key={i} className="gallery-item" variants={scaleIn} layout whileHover={{ scale: 1.02 }}>
-                      <div className="gallery-mock-img" style={{ backgroundImage: `url('${g.img}')` }}></div>
+                      <div className="gallery-mock-img" style={{ backgroundImage: `url('${g.img_url || (g as {img?: string}).img || ''}')` }}></div>
                       <div className="gallery-overlay">
                         <span className="gallery-album-name">{g.album}</span>
                         <span className="gallery-title">{g.title}</span>
@@ -1460,6 +2708,68 @@ export default function App() {
                   <h2 className="section-title text-center">📚 Sabbath School Lesson Discussion</h2>
                   <p className="section-subtitle text-center">Join the weekly SDA Adult lesson — study, discuss, and grow together</p>
                 </motion.div>
+
+                {/* Weekly Lesson Video Feature */}
+                <motion.div 
+                  className="card margin-top-3" 
+                  variants={fadeUp} 
+                  initial="hidden" 
+                  whileInView="visible" 
+                  viewport={{ once: true }}
+                  style={{ padding: '2rem', marginBottom: '2.5rem', borderLeft: '5px solid var(--accent)' }}
+                >
+                  <div className="lesson-video-grid">
+                    
+                    {/* Left: Video Player */}
+                    <div>
+                      <h3 style={{ marginBottom: '1rem', color: 'var(--primary-dark)' }}>🎬 Weekly Discussion Broadcast</h3>
+                      {(() => {
+                        const currentVideo = lessonVideos.find(v => v.week === selectedLessonWeek) || lessonVideos[0];
+                        return (
+                          <div>
+                            <div className="video-container shadow">
+                              <iframe
+                                width="100%"
+                                height="100%"
+                                src={`https://www.youtube.com/embed/${currentVideo.youtubeId}`}
+                                title={currentVideo.title}
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              ></iframe>
+                            </div>
+                            <h4 className="margin-top-2" style={{ color: 'var(--primary-dark)', marginBottom: '0.25rem' }}>{currentVideo.title}</h4>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginBottom: '0.75rem' }}>Study Date: {currentVideo.date}</p>
+                            <p style={{ fontSize: '0.95rem', color: 'var(--text-color)', lineHeight: 1.65, margin: 0 }}>{currentVideo.desc}</p>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Right: Weeks Selector */}
+                    <div className="lesson-video-sidebar">
+                      <h3 style={{ marginBottom: '1.25rem', color: 'var(--primary-dark)' }}>Select Study Week</h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {lessonVideos.map(video => (
+                          <button
+                            key={video.week}
+                            onClick={() => setSelectedLessonWeek(video.week)}
+                            className={`lesson-week-btn ${selectedLessonWeek === video.week ? 'active' : ''}`}
+                          >
+                            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: selectedLessonWeek === video.week ? 'var(--primary)' : 'var(--primary-dark)' }}>
+                              Week {video.week}
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-light)', marginTop: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {video.title.split(': ')[1] || video.title}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+                </motion.div>
+
                 <motion.div className="grid grid-3 gap-3 margin-top-3" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
                   {[
                     { title: 'Official Adult Lesson', desc: "Download this quarter's official Sabbath School lesson booklet and study daily.", link: 'https://www.sabbath.school/', icon: '📖', cta: 'Get Lesson' },
@@ -1479,6 +2789,13 @@ export default function App() {
                 </motion.div>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* ================= HYMNS PAGE ================= */}
+        {currentRoute === 'hymns' && (
+          <motion.div key="hymns" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <HymnsPage />
           </motion.div>
         )}
 
@@ -1882,9 +3199,417 @@ export default function App() {
           </motion.div>
         )}
 
+        {/* ================= ANNOUNCEMENTS VIEW ================= */}
+        {currentRoute === 'announcements' && (
+          <motion.div key="announcements" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <div className="page-header" style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)' }}>
+              <div className="container text-center">
+                <h1 style={{ color: '#fff' }}>Church Notices & Announcements</h1>
+                <p style={{ color: 'rgba(255,255,255,0.75)' }}>Stay informed about events, reminders, and church news</p>
+              </div>
+            </div>
+
+            <div className="section-padding">
+              <div className="container" style={{ maxWidth: '900px', margin: '0 auto' }}>
+                <motion.div className="section-header text-center" variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  <h2 className="section-title">Latest Notices</h2>
+                  <p className="section-subtitle">Important updates from the church office and leadership</p>
+                </motion.div>
+
+                <motion.div className="margin-top-3" variants={staggerContainer} initial="hidden" animate="visible">
+                  {announcements.map((notice) => {
+                    const priorityColors: Record<string, { bg: string; border: string; badge: string; badgeText: string }> = {
+                      high: { bg: '#FFF7ED', border: '#EA580C', badge: '#EA580C', badgeText: '#fff' },
+                      normal: { bg: '#EFF6FF', border: '#1E3A8A', badge: '#1E3A8A', badgeText: '#fff' },
+                      low: { bg: '#F0FDF4', border: '#16A34A', badge: '#16A34A', badgeText: '#fff' },
+                    };
+                    const colors = priorityColors[notice.priority] || priorityColors.normal;
+                    return (
+                      <motion.div
+                        key={notice.id}
+                        variants={staggerItem}
+                        whileHover={{ x: 4 }}
+                        style={{
+                          background: colors.bg,
+                          borderRadius: '12px',
+                          borderLeft: `5px solid ${colors.border}`,
+                          padding: '1.5rem 1.75rem',
+                          marginBottom: '1.25rem',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                          display: 'flex',
+                          gap: '1.25rem',
+                          alignItems: 'flex-start',
+                        }}
+                      >
+                        <div style={{ fontSize: '2rem', flexShrink: 0, lineHeight: 1 }}>{notice.icon}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#1e293b' }}>{notice.title}</h3>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+                              <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.65rem', borderRadius: '20px', background: colors.badge, color: colors.badgeText, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                {notice.priority === 'high' ? '🔴 Urgent' : notice.priority === 'low' ? '🟢 Info' : '🔵 Notice'}
+                              </span>
+                              <span style={{ fontSize: '0.8rem', color: '#64748b', whiteSpace: 'nowrap' }}>{notice.date}</span>
+                            </div>
+                          </div>
+                          <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: 1.65 }}>{notice.body}</p>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+
+                <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} className="card dark-card text-center margin-top-4" style={{ padding: '2rem' }}>
+                  <h3 style={{ color: '#D4AF37' }}>📣 Submit an Announcement</h3>
+                  <p style={{ color: 'rgba(255,255,255,0.7)', marginTop: '0.5rem', marginBottom: '1.5rem' }}>Ministry leaders and elders can submit notices through the church office or admin portal.</p>
+                  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button onClick={() => setCurrentRoute('contact')} className="btn btn-accent btn-small">Contact Church Office</button>
+                    <button onClick={() => setCurrentRoute('admin')} className="btn btn-outline btn-small" style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }}>Admin Portal</button>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ================= AUTH MODAL ================= */}
+        {showAuthModal && (
+          <motion.div key="auth" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <div style={{
+              padding: '2rem',
+              maxWidth: '600px',
+              margin: '2rem auto',
+              background: 'white',
+              borderRadius: '8px',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+            }}>
+              <button
+                onClick={() => setShowAuthModal(false)}
+                style={{
+                  float: 'right',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer'
+                }}
+              >
+                ✕
+              </button>
+              {authMode === 'login' ? (
+                <div>
+                  <LoginForm onSuccess={(username) => {
+                    setIsLoggedIn(true);
+                    setUserEmail(username);
+                    setShowAuthModal(false);
+                  }} />
+                  <p style={{ textAlign: 'center', marginTop: '1rem', color: '#666' }}>
+                    Don't have an account? 
+                    <button
+                      onClick={() => setAuthMode('register')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#003d7a',
+                        cursor: 'pointer',
+                        marginLeft: '0.5rem'
+                      }}
+                    >
+                      Register here
+                    </button>
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <RegisterForm onSuccess={() => {
+                    setAuthMode('login');
+                    toast.success('Account created! Please log in.');
+                  }} />
+                  <p style={{ textAlign: 'center', marginTop: '1rem', color: '#666' }}>
+                    Already have an account?
+                    <button
+                      onClick={() => setAuthMode('login')}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#003d7a',
+                        cursor: 'pointer',
+                        marginLeft: '0.5rem'
+                      }}
+                    >
+                      Log in here
+                    </button>
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* ================= DASHBOARD ================= */}
+        {currentRoute === 'dashboard' && isLoggedIn && (
+          <motion.div key="dashboard" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <MemberDashboard userEmail={userEmail} />
+          </motion.div>
+        )}
+
+        {/* ================= BLOG ================= */}
+        {currentRoute === 'blog' && (
+          <motion.div key="blog" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <BlogPage />
+          </motion.div>
+        )}
+
+        {/* ================= TESTIMONIES ================= */}
+        {currentRoute === 'testimonies' && (
+          <motion.div key="testimonies" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <TestimoniesPage />
+          </motion.div>
+        )}
+
+        {/* ================= FORUMS ================= */}
+        {currentRoute === 'forums' && (
+          <motion.div key="forums" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <ForumsPage />
+          </motion.div>
+        )}
+
+        {/* ================= STAFF DIRECTORY ================= */}
+        {currentRoute === 'staff' && (
+          <motion.div key="staff" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <StaffDirectory />
+          </motion.div>
+        )}
+
+        {/* ================= MINISTRY DETAIL PAGES ================= */}
+        {currentRoute === 'youth-ministry' && (
+          <motion.div key="youth-ministry" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <div className="page-header" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}>
+              <div className="container text-center">
+                <h1 style={{ color: '#fff', marginBottom: '0.5rem' }}>Youth Ministry</h1>
+                <p style={{ color: 'var(--accent)', marginBottom: 0 }}>Empowering young professionals and students</p>
+              </div>
+            </div>
+            <div className="section-padding">
+              <div className="container">
+                <motion.div className="grid grid-2 gap-4" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>What We Do</h3>
+                    <p>Our Youth Ministry provides a space where students connect, share, and grow. We organize campouts, vespers, and forums on mental health, careers, and relationships. Whether you're seeking spiritual growth, leadership development, or simply a community of peers, the Youth Ministry welcomes you.</p>
+                  </motion.div>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>Get Involved</h3>
+                    <p>Join Bible study groups, participate in service projects, attend our weekly vespers, or help lead events for your peers. We meet regularly throughout the academic year and have opportunities for all involvement levels.</p>
+                    <button onClick={() => setCurrentRoute('bible-study')} className="btn btn-primary margin-top-2">Join Bible Study Group</button>
+                  </motion.div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {currentRoute === 'campus-ministry' && (
+          <motion.div key="campus-ministry" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <div className="page-header" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}>
+              <div className="container text-center">
+                <h1 style={{ color: '#fff', marginBottom: '0.5rem' }}>Campus Ministry</h1>
+                <p style={{ color: 'var(--accent)', marginBottom: 0 }}>Reaching student hearts at Bugema</p>
+              </div>
+            </div>
+            <div className="section-padding">
+              <div className="container">
+                <motion.div className="grid grid-2 gap-4" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>Our Mission</h3>
+                    <p>Campus Ministry focuses on reaching international and local students at Bugema University with the gospel message. We provide spiritual support, mentorship, and community for all students regardless of background or religious experience.</p>
+                  </motion.div>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>Connect With Us</h3>
+                    <p>Attend our weekly meetings, join a small group, participate in campus outreach events, or simply visit us at the chapel. We're here to support your spiritual journey during your university years.</p>
+                    <button onClick={() => setCurrentRoute('contact')} className="btn btn-primary margin-top-2">Get in Touch</button>
+                  </motion.div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {currentRoute === 'music-ministry' && (
+          <motion.div key="music-ministry" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <div className="page-header" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}>
+              <div className="container text-center">
+                <h1 style={{ color: '#fff', marginBottom: '0.5rem' }}>Music Ministry</h1>
+                <p style={{ color: 'var(--accent)', marginBottom: 0 }}>Worship through international harmonies</p>
+              </div>
+            </div>
+            <div className="section-padding">
+              <div className="container">
+                <motion.div className="grid grid-2 gap-4" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>Our Choirs</h3>
+                    <p>We host multiple choirs representing various linguistic and regional groups. Join our praise band, dynamic orchestra, or the Seattle International Choir. Whether you're a seasoned vocalist or just learning, there's a place for you in our music ministry.</p>
+                  </motion.div>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>Join the Music</h3>
+                    <p>Auditions are open year-round. Come express your faith through music—from traditional hymns to contemporary worship. We practice weekly and perform during our main services and special events.</p>
+                    <button onClick={() => setCurrentRoute('contact')} className="btn btn-primary margin-top-2">Join the Choir</button>
+                  </motion.div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {currentRoute === 'pathfinders-ministry' && (
+          <motion.div key="pathfinders-ministry" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <div className="page-header" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}>
+              <div className="container text-center">
+                <h1 style={{ color: '#fff', marginBottom: '0.5rem' }}>Pathfinders & Adventurers</h1>
+                <p style={{ color: 'var(--accent)', marginBottom: 0 }}>Training children and teens for God</p>
+              </div>
+            </div>
+            <div className="section-padding">
+              <div className="container">
+                <motion.div className="grid grid-2 gap-4" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>Our Program</h3>
+                    <p>An active scouting-style club focused on physical skills, nature studies, camping, survival guides, and foundational Bible learning for ages 6-18. We believe in developing well-rounded, faith-filled young people.</p>
+                  </motion.div>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>Enroll Your Child</h3>
+                    <p>Pathfinders meet regularly for activities, skill-building, community service, and spiritual growth. Parents are welcome to volunteer as leaders. Contact us for enrollment information and meeting schedules.</p>
+                    <button onClick={() => setCurrentRoute('contact')} className="btn btn-primary margin-top-2">Enroll Your Child</button>
+                  </motion.div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {currentRoute === 'women-ministry' && (
+          <motion.div key="women-ministry" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <div className="page-header" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}>
+              <div className="container text-center">
+                <h1 style={{ color: '#fff', marginBottom: '0.5rem' }}>Women's Ministries</h1>
+                <p style={{ color: 'var(--accent)', marginBottom: 0 }}>Nurturing faith, family, and sisterhood</p>
+              </div>
+            </div>
+            <div className="section-padding">
+              <div className="container">
+                <motion.div className="grid grid-2 gap-4" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>Our Fellowship</h3>
+                    <p>Providing opportunities for spiritual growth, fellowship, and mentoring among women of all backgrounds. We host prayer circles, cooking workshops, and charity outreaches. Whether you're a student, professional, or parent, find your community here.</p>
+                  </motion.div>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>Join Our Circle</h3>
+                    <p>Meet new sisters in Christ, grow spiritually, and make a difference in our community. We meet monthly for fellowship and quarterly for special events. All women are invited and welcome.</p>
+                    <button onClick={() => setCurrentRoute('contact')} className="btn btn-primary margin-top-2">Join Women's Circle</button>
+                  </motion.div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {currentRoute === 'prayer-ministry' && (
+          <motion.div key="prayer-ministry" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <div className="page-header" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}>
+              <div className="container text-center">
+                <h1 style={{ color: '#fff', marginBottom: '0.5rem' }}>Prayer Ministry</h1>
+                <p style={{ color: 'var(--accent)', marginBottom: 0 }}>Standing in the gap for our community</p>
+              </div>
+            </div>
+            <div className="section-padding">
+              <div className="container">
+                <motion.div className="grid grid-2 gap-4" variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>Our Mission</h3>
+                    <p>Our prayer warriors maintain a chain of prayer for our church, community, and world. We gather for prayer requests submitted online or physically, hosting early morning devotions and specialized fasting sessions.</p>
+                  </motion.div>
+                  <motion.div className="card" variants={staggerItem}>
+                    <h3>Join Prayer Warriors</h3>
+                    <p>Submit prayer requests, join our prayer chain, attend our early morning prayer meetings, or fast with us for specific intentions. Prayer is the foundation of everything we do as a church community.</p>
+                    <button onClick={() => setCurrentRoute('prayer-requests')} className="btn btn-primary margin-top-2">Join Prayer Warriors</button>
+                  </motion.div>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ================= ANALYTICS (For Admins) ================= */}
+        {currentRoute === 'analytics' && (
+          <motion.div key="analytics" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            <AnalyticsDashboard />
+          </motion.div>
+        )}
+
         {/* ================= ADMIN VIEW ================= */}
         {currentRoute === 'admin' && (
           <motion.div key="admin" variants={pageTransition} initial="hidden" animate="visible" exit="exit">
+            {!isAdminAuthenticated ? (
+              /* ---- Admin Login Screen ---- */
+              <>
+                <div className="page-header" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}>
+                  <div className="container text-center">
+                    <h1 style={{ color: '#fff' }}>Admin Portal</h1>
+                    <p style={{ color: 'rgba(255,255,255,0.75)' }}>Authorized church staff access only</p>
+                  </div>
+                </div>
+                <div className="section-padding">
+                  <div style={{ maxWidth: '440px', margin: '0 auto' }}>
+                    <motion.div className="card" variants={scaleIn} initial="hidden" animate="visible" style={{ borderTop: '4px solid var(--primary)' }}>
+                      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                        <div style={{ width: '60px', height: '60px', background: 'rgba(30,58,138,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                          </svg>
+                        </div>
+                        <h2 style={{ color: 'var(--primary-dark)', marginBottom: '0.25rem' }}>Sign In</h2>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Enter your church admin credentials</p>
+                      </div>
+                      <form onSubmit={handleAdminLogin}>
+                        <div className="form-group">
+                          <label>Username</label>
+                          <input
+                            type="text"
+                            value={adminLoginForm.username}
+                            onChange={e => setAdminLoginForm({ ...adminLoginForm, username: e.target.value })}
+                            required
+                            placeholder="Enter username"
+                            autoComplete="username"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>Password</label>
+                          <input
+                            type="password"
+                            value={adminLoginForm.password}
+                            onChange={e => setAdminLoginForm({ ...adminLoginForm, password: e.target.value })}
+                            required
+                            placeholder="Enter password"
+                            autoComplete="current-password"
+                          />
+                        </div>
+                        {adminLoginError && (
+                          <div className="alert-danger margin-top-1" style={{ marginBottom: '1rem', fontSize: '0.88rem' }}>
+                            {adminLoginError}
+                          </div>
+                        )}
+                        <button type="submit" className="btn btn-primary btn-block" disabled={adminLoginLoading}>
+                          {adminLoginLoading ? 'Signing in...' : 'Sign In to Admin Portal'}
+                        </button>
+                      </form>
+                      <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        Only staff accounts can access the admin portal.
+                      </p>
+                    </motion.div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* ---- Authenticated Admin Dashboard ---- */
+              <>
             <div className="page-header">
               <div className="container text-center">
                 <h1>Admin Dashboard</h1>
@@ -1898,13 +3623,18 @@ export default function App() {
                   <h3 className="admin-sidebar-title">Navigation</h3>
                   <ul className="admin-menu">
                     {[
-                      { id: 'admin-stats', label: 'Dashboard Stats' },
-                      { id: 'admin-studies', label: 'Bible Studies' },
-                      { id: 'admin-prayers', label: 'Prayer Requests' },
-                      { id: 'admin-donations', label: 'Donations' },
-                      { id: 'admin-events', label: 'Manage Events' },
-                      { id: 'admin-sermons', label: 'Manage Sermons' },
-                      { id: 'admin-projects', label: 'Manage Projects' }
+                      { id: 'admin-stats', label: '📊 Dashboard Stats' },
+                      { id: 'admin-studies', label: '📖 Bible Studies' },
+                      { id: 'admin-prayers', label: '🙏 Prayer Requests' },
+                      { id: 'admin-donations', label: '💰 Donations' },
+                      { id: 'admin-events', label: '📅 Manage Events' },
+                      { id: 'admin-sermons', label: '🎙️ Manage Sermons' },
+                      { id: 'admin-announcements', label: '📣 Announcements' },
+                      { id: 'admin-projects', label: '🏗️ Manage Projects' },
+                      { id: 'admin-gallery', label: '📸 Manage Gallery' },
+                      { id: 'admin-lessons', label: '🎬 Lesson Videos' },
+                      { id: 'admin-sabbath-programme', label: '🗓️ Sabbath Programme' },
+
                     ].map(tab => (
                       <li key={tab.id}>
                         <button 
@@ -1915,18 +3645,567 @@ export default function App() {
                         </button>
                       </li>
                     ))}
+                    <li style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                      <button onClick={handleAdminLogout} className="admin-tab-btn" style={{ color: '#DC2626', width: '100%', textAlign: 'left' }}>
+                        🚪 Sign Out
+                      </button>
+                    </li>
                   </ul>
                 </div>
 
                 <div className="admin-main-panel card">
+                  {/* Gallery Upload Tab */}
+                  {activeAdminTab === 'admin-gallery' && (
+                    <div className="admin-tab-content active">
+                      <h2>Manage Gallery</h2>
+                      <p className="text-muted">Upload church photos directly to Supabase cloud storage. They will appear instantly in the Gallery page.</p>
+                      <form onSubmit={handleGalleryUpload} className="card margin-top-2" style={{ padding: '1.5rem' }}>
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Photo Title</label>
+                            <input
+                              type="text"
+                              value={galleryUploadForm.title}
+                              onChange={e => setGalleryUploadForm(f => ({ ...f, title: e.target.value }))}
+                              placeholder="e.g., Youth Baptism 2025"
+                              required
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Album Category</label>
+                            <select
+                              value={galleryUploadForm.album}
+                              onChange={e => setGalleryUploadForm(f => ({ ...f, album: e.target.value }))}
+                            >
+                              {['Sabbath Worship', 'Baptism', 'Graduation Sabbath', 'Youth Camp', 'Choir', 'Community Outreach', 'Back to School', 'Other'].map(a => (
+                                <option key={a} value={a}>{a}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="form-group margin-top-2">
+                          <label>Select Photo</label>
+                          <input
+                            ref={galleryFileRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={e => setGalleryUploadFile(e.target.files?.[0] || null)}
+                            required
+                            style={{ padding: '0.5rem' }}
+                          />
+                          {galleryUploadFile && (
+                            <div className="margin-top-2">
+                              <img
+                                src={URL.createObjectURL(galleryUploadFile)}
+                                alt="Preview"
+                                style={{ maxWidth: '200px', maxHeight: '140px', objectFit: 'cover', borderRadius: '8px', border: '2px solid var(--primary)' }}
+                              />
+                              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>{galleryUploadFile.name}</p>
+                            </div>
+                          )}
+                        </div>
+                        <button type="submit" className="btn btn-primary margin-top-2" disabled={galleryUploading}>
+                          {galleryUploading ? '⏳ Uploading...' : '📤 Upload to Supabase'}
+                        </button>
+                      </form>
+
+                      <div className="margin-top-3">
+                        <h3>Cloud Gallery ({gallery.length} photos)</h3>
+                        {gallery.length === 0 ? (
+                          <p className="text-muted" style={{ marginTop: '0.5rem' }}>No photos uploaded yet. Use the form above to add your first photo.</p>
+                        ) : (
+                          <div className="grid grid-3 gap-2 margin-top-2">
+                            {gallery.map((img, i) => (
+                              <div key={i} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                                <img src={img.img_url} alt={img.title} style={{ width: '100%', height: '140px', objectFit: 'cover' }} />
+                                <div style={{ padding: '0.75rem' }}>
+                                  <p style={{ fontWeight: 600, fontSize: '0.88rem', margin: 0 }}>{img.title}</p>
+                                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0.2rem 0 0' }}>{img.album}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ===================== LESSON VIDEOS TAB ===================== */}
+                  {activeAdminTab === 'admin-lessons' && (
+                    <div className="admin-tab-content active">
+                      <h2>🎬 Lesson Videos</h2>
+                      <p className="text-muted">Upload the YouTube discussion video for each Sabbath School lesson week. Paste any YouTube URL or just the video ID. Changes will appear immediately on the Bible Study page for all members.</p>
+
+                      {/* Add Video Form */}
+                      <form onSubmit={handleAdminAddLessonVideo} className="card margin-top-3" style={{ padding: '1.75rem', borderLeft: '4px solid var(--accent)' }}>
+                        <h3 style={{ marginBottom: '1.25rem', color: 'var(--primary-dark)' }}>➕ Add Weekly Lesson Video</h3>
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Week Number</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="13"
+                              value={addLessonForm.week}
+                              onChange={e => setAddLessonForm(f => ({ ...f, week: e.target.value }))}
+                              required
+                              placeholder="e.g. 5"
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Study Date</label>
+                            <input
+                              type="date"
+                              value={addLessonForm.date}
+                              onChange={e => setAddLessonForm(f => ({ ...f, date: e.target.value }))}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="form-group">
+                          <label>Lesson Title</label>
+                          <input
+                            type="text"
+                            value={addLessonForm.title}
+                            onChange={e => setAddLessonForm(f => ({ ...f, title: e.target.value }))}
+                            required
+                            placeholder="e.g. Week 5: The Covenant and the Sanctuary"
+                          />
+                        </div>
+                        <div className="form-group">
+                          <label>YouTube URL or Video ID</label>
+                          <input
+                            type="text"
+                            value={addLessonForm.youtube_id}
+                            onChange={e => setAddLessonForm(f => ({ ...f, youtube_id: e.target.value }))}
+                            required
+                            placeholder="e.g. https://www.youtube.com/watch?v=ABC123xyz or just ABC123xyz"
+                          />
+                          <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                            Paste the full YouTube link — the video ID will be extracted automatically.
+                          </small>
+                        </div>
+                        <div className="form-group">
+                          <label>Short Description</label>
+                          <textarea
+                            value={addLessonForm.desc}
+                            onChange={e => setAddLessonForm(f => ({ ...f, desc: e.target.value }))}
+                            required
+                            rows={3}
+                            placeholder="A brief summary of what this week's lesson discussion covers..."
+                          />
+                        </div>
+                        <button type="submit" className="btn btn-accent btn-block">
+                          📤 Upload Lesson Video
+                        </button>
+                      </form>
+
+                      {/* Current Lessons List */}
+                      <div className="margin-top-3">
+                        <h3 style={{ marginBottom: '1rem' }}>📋 Currently Uploaded Lesson Videos ({lessonVideos.length})</h3>
+                        {lessonVideos.length === 0 ? (
+                          <p className="text-muted">No lesson videos uploaded yet. Use the form above to add the first one.</p>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {lessonVideos.map(v => (
+                              <div key={v.id || v.week} className="card" style={{ padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+                                    <span style={{ background: 'var(--primary)', color: '#fff', padding: '0.2rem 0.65rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>
+                                      Week {v.week}
+                                    </span>
+                                    <strong style={{ fontSize: '0.95rem' }}>{v.title}</strong>
+                                  </div>
+                                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                                    📅 {v.date} &nbsp;|&nbsp; 🔗 youtube.com/watch?v={v.youtubeId}
+                                  </p>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                                  <a
+                                    href={`https://www.youtube.com/watch?v=${v.youtubeId}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn btn-outline btn-small"
+                                  >
+                                    ▶️ Preview
+                                  </a>
+                                  <button
+                                    onClick={() => handleAdminDeleteLessonVideo(v.id, v.week)}
+                                    className="btn btn-small"
+                                    style={{ background: '#FEE2E2', color: '#DC2626', border: 'none', cursor: 'pointer' }}
+                                  >
+                                    🗑️ Remove
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sabbath Programme Tab */}
+                  {activeAdminTab === 'admin-sabbath-programme' && (
+                    <div className="admin-tab-content active">
+                      <h2>🗓️ Sabbath Programme Management</h2>
+                      <p className="text-muted">
+                        Manage Sabbath programme information directly. Changes appear immediately on the Sabbath Programme page.
+                      </p>
+
+                      <div className="card margin-top-2" style={{ padding: '1.25rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                          <strong>Programme Entries: {sabbathProgrammes.length}</strong>
+                          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                            <button type="button" className="btn btn-outline btn-small" onClick={handleAddSabbathProgramme}>
+                              + Add Entry
+                            </button>
+                            <button type="button" className="btn btn-small" style={{ background: '#FEE2E2', color: '#DC2626', border: 'none' }} onClick={handleDeleteSabbathProgramme}>
+                              Remove Entry
+                            </button>
+                            <button type="button" className="btn btn-outline btn-small" onClick={handleResetSabbathProgrammes}>
+                              Reset to Default
+                            </button>
+                            <button type="button" className="btn btn-accent btn-small" onClick={handleSaveSabbathProgrammeForm}>
+                              Save Information
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="form-group" style={{ marginBottom: '1rem' }}>
+                          <label>Select Programme Entry</label>
+                          <select
+                            value={selectedSabbathProgramIndex}
+                            onChange={(e) => handleSelectSabbathProgramme(parseInt(e.target.value, 10))}
+                          >
+                            {sabbathProgrammes.map((item, index) => (
+                              <option key={`${item.date}-${index}`} value={index}>
+                                {item.date} - {item.theme}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Date</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.date}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, date: e.target.value }))}
+                              placeholder="Sabbath, August 16, 2026"
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Theme</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.theme}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, theme: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Sabbath School Time</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.sabbathSchoolTime}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, sabbathSchoolTime: e.target.value }))}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Divine Service Time</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.divineServiceTime}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, divineServiceTime: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Superintendent</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.superintendent}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, superintendent: e.target.value }))}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Lesson Number</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={sabbathProgramForm.lessonNumber}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, lessonNumber: parseInt(e.target.value || '1', 10) }))}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Lesson Title</label>
+                          <input
+                            type="text"
+                            value={sabbathProgramForm.lessonTitle}
+                            onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, lessonTitle: e.target.value }))}
+                          />
+                        </div>
+
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Song Leader</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.songLeader}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, songLeader: e.target.value }))}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Opening Prayer</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.openingPrayer}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, openingPrayer: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Sermon Preacher</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.sermonPreacher}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, sermonPreacher: e.target.value }))}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Sermon Role</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.sermonRole}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, sermonRole: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Sermon Title</label>
+                          <input
+                            type="text"
+                            value={sabbathProgramForm.sermonTitle}
+                            onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, sermonTitle: e.target.value }))}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Sermon Key Text</label>
+                          <input
+                            type="text"
+                            value={sabbathProgramForm.sermonKeyText}
+                            onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, sermonKeyText: e.target.value }))}
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Sermon Synopsis</label>
+                          <textarea
+                            value={sabbathProgramForm.sermonSynopsis}
+                            onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, sermonSynopsis: e.target.value }))}
+                            rows={4}
+                          />
+                        </div>
+
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Closing Prayer</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.closingPrayer}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, closingPrayer: e.target.value }))}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Benediction</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.benediction}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, benediction: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Afternoon Time</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.afternoonTime}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, afternoonTime: e.target.value }))}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Afternoon Leader</label>
+                            <input
+                              type="text"
+                              value={sabbathProgramForm.afternoonLeader}
+                              onChange={(e) => setSabbathProgramForm(prev => ({ ...prev, afternoonLeader: e.target.value }))}
+                            />
+                          </div>
+                        </div>
+
+                        <hr style={{ margin: '1rem 0', border: 'none', borderTop: '1px solid var(--border-color)' }} />
+
+                        <details>
+                          <summary style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--primary)' }}>Advanced JSON Editor</summary>
+                          <p className="text-muted" style={{ marginTop: '0.6rem', marginBottom: '0.4rem' }}>
+                            Use this for deep edits like hymns, special items, prayer points, and full structure changes.
+                          </p>
+                          <textarea
+                            value={sabbathProgramEditor}
+                            onChange={(e) => setSabbathProgramEditor(e.target.value)}
+                            rows={12}
+                            style={{
+                              width: '100%',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: '10px',
+                              padding: '0.85rem',
+                              fontFamily: 'Consolas, Menlo, Monaco, monospace',
+                              fontSize: '0.8rem',
+                              lineHeight: 1.5,
+                              boxSizing: 'border-box'
+                            }}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.6rem' }}>
+                            <button type="button" className="btn btn-outline btn-small" onClick={handleSaveSabbathProgrammes}>
+                              Save From JSON
+                            </button>
+                          </div>
+                        </details>
+
+                        {sabbathProgramError && (
+                          <div className="alert-danger margin-top-1" style={{ marginBottom: '0.75rem', fontSize: '0.88rem' }}>
+                            {sabbathProgramError}
+                          </div>
+                        )}
+
+                        <p className="text-muted" style={{ marginTop: '0.75rem', fontSize: '0.8rem' }}>
+                          Core fields here cover the main displayed programme information. Use the advanced editor for hymns, prayer points, and detailed nested sections.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Projects Tab */}
                   {activeAdminTab === 'admin-projects' && (
+
                     <div className="admin-tab-content active">
                       <h2>Manage Projects</h2>
-                      <p className="text-muted">Review active church construction and outreach projects.</p>
+                      <p className="text-muted">Create new projects, update fundraising progress, and remove completed or incorrect entries.</p>
+
+                      <form onSubmit={handleAdminAddProject} className="card margin-top-2" style={{ padding: '1.5rem', borderLeft: '4px solid var(--accent)' }}>
+                        <h3 style={{ marginBottom: '1rem' }}>➕ Add New Project</h3>
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Project Title</label>
+                            <input
+                              type="text"
+                              value={addProjectForm.title}
+                              onChange={(e) => setAddProjectForm((f) => ({ ...f, title: e.target.value }))}
+                              required
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Category</label>
+                            <select
+                              value={addProjectForm.category}
+                              onChange={(e) => setAddProjectForm((f) => ({ ...f, category: e.target.value }))}
+                            >
+                              {['Construction', 'Community', 'Outreach', 'Education', 'Media', 'Operations'].map((category) => (
+                                <option key={category} value={category}>{category}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Description</label>
+                          <textarea
+                            rows={3}
+                            value={addProjectForm.desc}
+                            onChange={(e) => setAddProjectForm((f) => ({ ...f, desc: e.target.value }))}
+                            required
+                          />
+                        </div>
+
+                        <div className="grid grid-3 gap-3">
+                          <div className="form-group">
+                            <label>Goal Amount (UGX)</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={addProjectForm.goal_amount}
+                              onChange={(e) => setAddProjectForm((f) => ({ ...f, goal_amount: e.target.value }))}
+                              required
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Raised Amount (UGX)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              value={addProjectForm.raised_amount}
+                              onChange={(e) => setAddProjectForm((f) => ({ ...f, raised_amount: e.target.value }))}
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Status</label>
+                            <select
+                              value={addProjectForm.status}
+                              onChange={(e) => setAddProjectForm((f) => ({ ...f, status: e.target.value }))}
+                            >
+                              {['Active', 'Almost Complete', 'Completed', 'Paused'].map((status) => (
+                                <option key={status} value={status}>{status}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Image URL (optional)</label>
+                          <input
+                            type="url"
+                            value={addProjectForm.image_url}
+                            onChange={(e) => setAddProjectForm((f) => ({ ...f, image_url: e.target.value }))}
+                            placeholder="https://..."
+                          />
+                        </div>
+
+                        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <input
+                            id="project-published"
+                            type="checkbox"
+                            checked={addProjectForm.is_published}
+                            onChange={(e) => setAddProjectForm((f) => ({ ...f, is_published: e.target.checked }))}
+                          />
+                          <label htmlFor="project-published" style={{ margin: 0 }}>Publish this project to viewers</label>
+                        </div>
+
+                        <button type="submit" className="btn btn-accent btn-block">Save Project</button>
+                      </form>
+
                       <div className="margin-top-2">
                         {projects.map(proj => {
                           const pct = Math.min(100, Math.round((proj.raised_amount / proj.goal_amount) * 100));
+                          const statusBg = proj.status === 'Active' ? '#d1fae5' : proj.status === 'Completed' ? '#dcfce7' : '#fef3c7';
+                          const statusColor = proj.status === 'Active' ? '#065f46' : proj.status === 'Completed' ? '#166534' : '#92400e';
+                          const allHistoryEntries = projectHistoryById[proj.id] ?? [];
+                          const filteredHistoryEntries = projectHistoryFilter === 'all'
+                            ? allHistoryEntries
+                            : allHistoryEntries.filter((entry) => entry.action === projectHistoryFilter);
                           return (
                             <div key={proj.id} className="card margin-top-2" style={{ padding: '1rem 1.25rem' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
@@ -1939,8 +4218,249 @@ export default function App() {
                                   <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '0.5rem' }}>
                                     <div style={{ height: '100%', width: pct + '%', background: 'var(--primary)', borderRadius: '3px', transition: 'width 0.8s ease' }} />
                                   </div>
+
+                                  <div className="grid grid-2 gap-2 margin-top-2">
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                      <label style={{ fontSize: '0.75rem' }}>Title</label>
+                                      <input
+                                        type="text"
+                                        value={projectDrafts[proj.id]?.title ?? proj.title}
+                                        onChange={(e) => setProjectDrafts((prev) => ({
+                                          ...prev,
+                                          [proj.id]: {
+                                            ...(prev[proj.id] ?? {
+                                              title: proj.title,
+                                              category: proj.category,
+                                              desc: proj.desc,
+                                              goal_amount: String(proj.goal_amount),
+                                              raised_amount: String(proj.raised_amount),
+                                              image_url: proj.image_url || '',
+                                              status: proj.status,
+                                              is_published: proj.is_published !== false,
+                                            }),
+                                            title: e.target.value,
+                                          },
+                                        }))}
+                                      />
+                                    </div>
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                      <label style={{ fontSize: '0.75rem' }}>Category</label>
+                                      <input
+                                        type="text"
+                                        value={projectDrafts[proj.id]?.category ?? proj.category}
+                                        onChange={(e) => setProjectDrafts((prev) => ({
+                                          ...prev,
+                                          [proj.id]: { ...(prev[proj.id] ?? projectDrafts[proj.id]), category: e.target.value },
+                                        }))}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="form-group" style={{ marginTop: '0.5rem', marginBottom: 0 }}>
+                                    <label style={{ fontSize: '0.75rem' }}>Description</label>
+                                    <textarea
+                                      rows={2}
+                                      value={projectDrafts[proj.id]?.desc ?? proj.desc}
+                                      onChange={(e) => setProjectDrafts((prev) => ({
+                                        ...prev,
+                                        [proj.id]: { ...(prev[proj.id] ?? projectDrafts[proj.id]), desc: e.target.value },
+                                      }))}
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-2 gap-2 margin-top-2">
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                      <label style={{ fontSize: '0.75rem' }}>Goal Amount (UGX)</label>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={projectDrafts[proj.id]?.goal_amount ?? String(proj.goal_amount)}
+                                        onChange={(e) => setProjectDrafts((prev) => ({
+                                          ...prev,
+                                          [proj.id]: { ...(prev[proj.id] ?? projectDrafts[proj.id]), goal_amount: e.target.value },
+                                        }))}
+                                      />
+                                    </div>
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                      <label style={{ fontSize: '0.75rem' }}>Raised Amount (UGX)</label>
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={projectDrafts[proj.id]?.raised_amount ?? String(proj.raised_amount)}
+                                        onChange={(e) => setProjectDrafts((prev) => ({
+                                          ...prev,
+                                          [proj.id]: {
+                                            ...(prev[proj.id] ?? projectDrafts[proj.id]),
+                                            raised_amount: e.target.value,
+                                          },
+                                        }))}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-2 gap-2 margin-top-2">
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                      <label style={{ fontSize: '0.75rem' }}>Image URL</label>
+                                      <input
+                                        type="url"
+                                        value={projectDrafts[proj.id]?.image_url ?? proj.image_url}
+                                        onChange={(e) => setProjectDrafts((prev) => ({
+                                          ...prev,
+                                          [proj.id]: { ...(prev[proj.id] ?? projectDrafts[proj.id]), image_url: e.target.value },
+                                        }))}
+                                      />
+                                    </div>
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                      <label style={{ fontSize: '0.75rem' }}>Status</label>
+                                      <select
+                                        value={projectDrafts[proj.id]?.status ?? proj.status}
+                                        onChange={(e) => setProjectDrafts((prev) => ({
+                                          ...prev,
+                                          [proj.id]: {
+                                            ...(prev[proj.id] ?? projectDrafts[proj.id]),
+                                            status: e.target.value,
+                                          },
+                                        }))}
+                                      >
+                                        {['Active', 'Almost Complete', 'Completed', 'Paused'].map((status) => (
+                                          <option key={status} value={status}>{status}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+
+                                  <div className="form-group" style={{ marginTop: '0.5rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                    <input
+                                      id={`project-published-${proj.id}`}
+                                      type="checkbox"
+                                      checked={projectDrafts[proj.id]?.is_published ?? (proj.is_published !== false)}
+                                      onChange={(e) => setProjectDrafts((prev) => ({
+                                        ...prev,
+                                        [proj.id]: { ...(prev[proj.id] ?? projectDrafts[proj.id]), is_published: e.target.checked },
+                                      }))}
+                                    />
+                                    <label htmlFor={`project-published-${proj.id}`} style={{ margin: 0, fontSize: '0.8rem' }}>Published to viewers</label>
+                                  </div>
+
+                                  {openProjectHistoryId === proj.id && (
+                                    <div className="card margin-top-2" style={{ padding: '0.85rem', background: '#f8fafc' }}>
+                                      <h5 style={{ margin: '0 0 0.5rem' }}>Change History</h5>
+                                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
+                                        {([
+                                          { value: 'all', label: 'All' },
+                                          { value: 'update', label: 'Updates' },
+                                          { value: 'create', label: 'Creates' },
+                                          { value: 'delete', label: 'Deletes' },
+                                        ] as Array<{ value: ProjectHistoryActionFilter; label: string }>).map((filterOption) => (
+                                          <button
+                                            key={filterOption.value}
+                                            type="button"
+                                            onClick={() => setProjectHistoryFilter(filterOption.value)}
+                                            className="btn btn-small"
+                                            style={{
+                                              padding: '0.22rem 0.6rem',
+                                              border: '1px solid #cbd5e1',
+                                              background: projectHistoryFilter === filterOption.value ? '#e2e8f0' : '#fff',
+                                              color: '#334155'
+                                            }}
+                                          >
+                                            {filterOption.label}
+                                          </button>
+                                        ))}
+                                      </div>
+                                      {allHistoryEntries.length === 0 ? (
+                                        <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.82rem' }}>No history entries yet.</p>
+                                      ) : filteredHistoryEntries.length === 0 ? (
+                                        <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.82rem' }}>No entries match this filter.</p>
+                                      ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                                          {filteredHistoryEntries.map((entry) => {
+                                            const actionStyles = getHistoryActionStyles(entry.action);
+                                            return (
+                                            <div key={entry.id} style={{ padding: '0.55rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff' }}>
+                                              <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, display: 'flex', gap: '0.45rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                <span style={{ padding: '0.15rem 0.5rem', borderRadius: '999px', background: actionStyles.background, color: actionStyles.color, fontSize: '0.68rem', letterSpacing: '0.02em' }}>
+                                                  {entry.action.toUpperCase()}
+                                                </span>
+                                                <span>{new Date(entry.created_at).toLocaleString()} · {entry.updated_by_username || 'System'}</span>
+                                              </p>
+                                              <div style={{ marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                                {Object.entries(entry.changed_fields || {}).map(([field, rawValue], index) => {
+                                                  if (field === 'new' || field === 'old') {
+                                                    const snapshot = rawValue && typeof rawValue === 'object'
+                                                      ? Object.entries(rawValue as Record<string, unknown>)
+                                                      : [];
+                                                    return (
+                                                      <div key={`${entry.id}-${field}-${index}`}>
+                                                        <p style={{ margin: '0 0 0.2rem', fontSize: '0.72rem', fontWeight: 700, color: '#334155' }}>
+                                                          {field === 'new' ? 'Snapshot After Change' : 'Snapshot Before Change'}
+                                                        </p>
+                                                        {snapshot.length === 0 ? (
+                                                          <p style={{ margin: 0, fontSize: '0.72rem', color: '#64748b' }}>No snapshot details.</p>
+                                                        ) : (
+                                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                                                            {snapshot.map(([snapshotField, snapshotValue]) => (
+                                                              <p key={`${entry.id}-${field}-${snapshotField}`} style={{ margin: 0, fontSize: '0.72rem', color: '#475569' }}>
+                                                                <strong>{formatProjectHistoryField(snapshotField)}:</strong> {formatProjectHistoryValue(snapshotValue)}
+                                                              </p>
+                                                            ))}
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    );
+                                                  }
+
+                                                  if (rawValue && typeof rawValue === 'object' && ('old' in (rawValue as Record<string, unknown>) || 'new' in (rawValue as Record<string, unknown>))) {
+                                                    const record = rawValue as Record<string, unknown>;
+                                                    return (
+                                                      <div key={`${entry.id}-${field}-${index}`} style={{ padding: '0.3rem 0.45rem', borderRadius: '6px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                                        <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 700, color: '#334155' }}>{formatProjectHistoryField(field)}</p>
+                                                        <p style={{ margin: '0.15rem 0 0', fontSize: '0.72rem', color: '#64748b', display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
+                                                          <span style={{ color: '#991b1b', background: '#fee2e2', borderRadius: '4px', padding: '0.05rem 0.28rem' }}>Old: {formatProjectHistoryValue(record.old)}</span>
+                                                          <span style={{ color: '#0f172a' }}>{'->'}</span>
+                                                          <span style={{ color: '#166534', background: '#dcfce7', borderRadius: '4px', padding: '0.05rem 0.28rem' }}>New: {formatProjectHistoryValue(record.new)}</span>
+                                                        </p>
+                                                      </div>
+                                                    );
+                                                  }
+
+                                                  return (
+                                                    <p key={`${entry.id}-${field}-${index}`} style={{ margin: 0, fontSize: '0.72rem', color: '#475569' }}>
+                                                      <strong>{formatProjectHistoryField(field)}:</strong> {formatProjectHistoryValue(rawValue)}
+                                                    </p>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                          )})}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
-                                <span style={{ padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, background: proj.status === 'Active' ? '#d1fae5' : '#fef3c7', color: proj.status === 'Active' ? '#065f46' : '#92400e' }}>{proj.status}</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+                                  <span style={{ padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, background: statusBg, color: statusColor }}>{proj.status}</span>
+                                  <span style={{ padding: '0.22rem 0.65rem', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700, background: proj.is_published !== false ? '#dcfce7' : '#fee2e2', color: proj.is_published !== false ? '#166534' : '#991b1b' }}>
+                                    {proj.is_published !== false ? 'Published' : 'Hidden'}
+                                  </span>
+                                  <button onClick={() => handleToggleProjectHistory(proj.id)} className="btn btn-small btn-outline">
+                                    {openProjectHistoryId === proj.id ? 'Hide History' : 'View History'}
+                                  </button>
+                                  <button
+                                    onClick={() => handleAdminQuickToggleProjectPublish(proj.id)}
+                                    className="btn btn-small btn-outline"
+                                  >
+                                    {proj.is_published !== false ? 'Hide from Public' : 'Publish Now'}
+                                  </button>
+                                  <button onClick={() => handleAdminUpdateProject(proj.id)} className="btn btn-small btn-outline">Update</button>
+                                  <button
+                                    onClick={() => handleAdminDeleteProject(proj.id)}
+                                    className="btn btn-small"
+                                    style={{ background: '#FEE2E2', color: '#DC2626', border: 'none' }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           );
@@ -2152,9 +4672,119 @@ export default function App() {
                     </div>
                   )}
 
+                  {/* Manage Announcements */}
+                  {activeAdminTab === 'admin-announcements' && (
+                    <div className="admin-tab-content active">
+                      <h2>Announcements & Notices</h2>
+                      <p className="text-muted">Create announcements here and they will appear on the Notices page for viewers when published.</p>
+
+                      <form onSubmit={handleAdminAddAnnouncement} className="card margin-top-2" style={{ padding: '1.5rem', borderLeft: '4px solid var(--accent)' }}>
+                        <h3 style={{ marginBottom: '1rem' }}>➕ Add Announcement</h3>
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Title</label>
+                            <input
+                              type="text"
+                              value={addAnnouncementForm.title}
+                              onChange={e => setAddAnnouncementForm(f => ({ ...f, title: e.target.value }))}
+                              required
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Date</label>
+                            <input
+                              type="date"
+                              value={addAnnouncementForm.date}
+                              onChange={e => setAddAnnouncementForm(f => ({ ...f, date: e.target.value }))}
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-2 gap-3">
+                          <div className="form-group">
+                            <label>Priority</label>
+                            <select
+                              value={addAnnouncementForm.priority}
+                              onChange={e => setAddAnnouncementForm(f => ({ ...f, priority: e.target.value as 'high' | 'normal' | 'low' }))}
+                            >
+                              <option value="high">High</option>
+                              <option value="normal">Normal</option>
+                              <option value="low">Low</option>
+                            </select>
+                          </div>
+                          <div className="form-group">
+                            <label>Icon / Emoji</label>
+                            <input
+                              type="text"
+                              value={addAnnouncementForm.icon}
+                              onChange={e => setAddAnnouncementForm(f => ({ ...f, icon: e.target.value }))}
+                              placeholder="📣"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-group">
+                          <label>Announcement Message</label>
+                          <textarea
+                            value={addAnnouncementForm.body}
+                            onChange={e => setAddAnnouncementForm(f => ({ ...f, body: e.target.value }))}
+                            required
+                            rows={4}
+                          />
+                        </div>
+
+                        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <input
+                            id="announcement-published"
+                            type="checkbox"
+                            checked={addAnnouncementForm.is_published}
+                            onChange={e => setAddAnnouncementForm(f => ({ ...f, is_published: e.target.checked }))}
+                          />
+                          <label htmlFor="announcement-published" style={{ margin: 0 }}>Publish immediately</label>
+                        </div>
+
+                        <button type="submit" className="btn btn-accent btn-block">Save Announcement</button>
+                      </form>
+
+                      <div className="margin-top-3">
+                        <h3 style={{ marginBottom: '1rem' }}>Published Announcement Records ({announcements.length})</h3>
+                        {announcements.length === 0 ? (
+                          <p className="text-muted">No announcements available yet.</p>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {announcements.map(item => (
+                              <div key={item.id} className="card" style={{ padding: '1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
+                                    <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
+                                    <strong>{item.title}</strong>
+                                  </div>
+                                  <p style={{ margin: '0 0 0.35rem', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                                    {item.date} · {item.priority.toUpperCase()} · {item.is_published ? 'Published' : 'Draft'}
+                                  </p>
+                                  <p style={{ margin: 0, fontSize: '0.9rem' }}>{item.body}</p>
+                                </div>
+                                <button
+                                  onClick={() => handleAdminDeleteAnnouncement(item.id)}
+                                  className="btn btn-small"
+                                  style={{ background: '#FEE2E2', color: '#DC2626', border: 'none' }}
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               </div>
             </div>
+              </>
+            )}
           </motion.div>
         )}
 
@@ -2212,7 +4842,25 @@ export default function App() {
             <hr style={{ margin: '15px 0', border: '0', borderTop: '1px solid var(--border-color)' }} />
             <p style={{ fontSize: '1.1rem', lineHeight: '1.8' }}>{selectedMinistry.desc}</p>
             <div className="margin-top-3" style={{ display: 'flex', gap: '15px' }}>
-              <button onClick={() => { setCurrentRoute('bible-study'); setSelectedMinistry(null); }} className="btn btn-primary">Join Bible Study Group</button>
+              <button onClick={() => { 
+                const routeMap: { [key: string]: string } = {
+                  'youth': 'youth-ministry',
+                  'campus': 'campus-ministry',
+                  'music': 'music-ministry',
+                  'pathfinders': 'pathfinders-ministry',
+                  'women': 'women-ministry',
+                  'prayer': 'prayer-ministry'
+                };
+                setCurrentRoute(routeMap[selectedMinistry.id] || 'ministries'); 
+                setSelectedMinistry(null); 
+              }} className="btn btn-primary">
+                {selectedMinistry.id === 'youth' && 'Join Bible Study Group'}
+                {selectedMinistry.id === 'campus' && 'Connect with Campus Ministry'}
+                {selectedMinistry.id === 'music' && 'Join the Choir'}
+                {selectedMinistry.id === 'pathfinders' && 'Enroll Your Child'}
+                {selectedMinistry.id === 'women' && 'Join Women\'s Circle'}
+                {selectedMinistry.id === 'prayer' && 'Join Prayer Warriors'}
+              </button>
               <button onClick={() => { setCurrentRoute('contact'); setSelectedMinistry(null); }} className="btn btn-outline">Get in Touch</button>
             </div>
           </motion.div>

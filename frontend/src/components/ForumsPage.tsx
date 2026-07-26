@@ -1,0 +1,404 @@
+﻿import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare, MessageCircle, Search, Plus, ChevronLeft, Pin, Flame, Eye, ThumbsUp, Tag, X, Send, BookOpen, Heart, Users, Bell, Star, Hash } from 'lucide-react';
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+};
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.05 } }
+};
+const staggerItem = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+};
+
+const FALLBACK_CATEGORIES = [
+  { id: 1, name: 'Prayer & Devotion', description: 'Share prayer requests, devotional thoughts, and spiritual reflections with the community.', thread_count: 34, color: '#8B5CF6', icon: <Heart size={22} />, tag: 'Spiritual' },
+  { id: 2, name: 'Bible Discussion', description: 'Dive deep into scripture, Sabbath School lessons, and theological questions together.', thread_count: 52, color: '#0EA5E9', icon: <BookOpen size={22} />, tag: 'Study' },
+  { id: 3, name: 'Student Life', description: 'Campus topics, study groups, hostel life, exams, and everything student at Bugema.', thread_count: 41, color: '#10B981', icon: <Users size={22} />, tag: 'Campus' },
+  { id: 4, name: 'Testimonies & Praise', description: 'Share what God has done in your life — miracles, answered prayers, and breakthroughs.', thread_count: 28, color: '#F59E0B', icon: <Star size={22} />, tag: 'Praise' },
+  { id: 5, name: 'Church Announcements', description: 'Official updates, events, program changes, and notices from church leadership.', thread_count: 19, color: '#EF4444', icon: <Bell size={22} />, tag: 'Official' },
+  { id: 6, name: 'General Fellowship', description: 'Casual conversations, jokes, recommendations, and general community chat.', thread_count: 63, color: '#EC4899', icon: <MessageCircle size={22} />, tag: 'Social' }
+];
+
+const FALLBACK_THREADS: Record<number, any[]> = {
+  1: [
+    { id: 101, title: 'Please pray for my mother\'s surgery next week', author: 'Miriam K.', avatar: 'M', time: '2 hours ago', replies: 14, views: 89, likes: 22, pinned: false, tags: ['Prayer Request'], preview: 'She is scheduled for a major surgery on Thursday. Please intercede for her full recovery and the surgeons hands...' },
+    { id: 102, title: 'Morning devotion — "Be still and know that I am God" (Ps 46:10)', author: 'Pastor Kagwa', avatar: 'K', time: '6 hours ago', replies: 31, views: 210, likes: 47, pinned: true, tags: ['Devotional', 'Pastor'], preview: 'In the middle of every storm, there is an invitation to stillness. Today I want us to reflect on what it means to truly be still...' },
+    { id: 103, title: 'Fasting and Prayer this Friday — who is joining?', author: 'Enok T.', avatar: 'E', time: '1 day ago', replies: 26, views: 145, likes: 38, pinned: false, tags: ['Fasting', 'Corporate Prayer'], preview: 'We are organizing a day of fasting and prayer this coming Friday for the new semester. Anyone who wants to join...' },
+    { id: 104, title: 'What does praying without ceasing look like for a student?', author: 'Ruth N.', avatar: 'R', time: '2 days ago', replies: 19, views: 102, likes: 15, pinned: false, tags: ['Discussion'], preview: 'I struggle with maintaining a consistent prayer life with all my assignments and class schedules. How do you all keep it going?' },
+  ],
+  2: [
+    { id: 201, title: 'Sabbath School Lesson Q3 — The Sanctuary: What stood out to you?', author: 'Elder Francis', avatar: 'F', time: '1 day ago', replies: 44, views: 312, likes: 67, pinned: true, tags: ['Sabbath School', 'Q3 2026'], preview: 'This week\'s lesson on the Most Holy Place really challenged me. Especially the part about Christ as our High Priest...' },
+    { id: 202, title: 'Daniel 2 vs Revelation 13 — How are they connected?', author: 'Joseph M.', avatar: 'J', time: '3 days ago', replies: 28, views: 189, likes: 34, pinned: false, tags: ['Prophecy', 'Deep Study'], preview: 'I\'ve been studying both chapters and the parallels are striking. I want to share what I found and get the community\'s thoughts...' },
+    { id: 203, title: 'Best resources for personal Bible study as a student?', author: 'Grace A.', avatar: 'G', time: '4 days ago', replies: 17, views: 134, likes: 29, pinned: false, tags: ['Resources'], preview: 'Looking for good commentaries, apps, or books that are both affordable and academically sound. What works for you?' },
+  ],
+  3: [
+    { id: 301, title: 'Semester 2 study group for Engineering students — join here', author: 'David L.', avatar: 'D', time: '5 hours ago', replies: 9, views: 67, likes: 12, pinned: false, tags: ['Study Group', 'Engineering'], preview: 'Starting a weekly study group every Monday at 7pm in the library. All engineering and IT students welcome...' },
+    { id: 302, title: 'How do you manage faith and end-of-semester pressure?', author: 'Amara S.', avatar: 'A', time: '2 days ago', replies: 33, views: 221, likes: 45, pinned: false, tags: ['Mental Health', 'Student Life'], preview: 'With exams approaching, I find myself skipping worship. I feel guilty but also overwhelmed. Anyone else feel this?' },
+    { id: 303, title: 'Hostel curfew discussion — is 10pm reasonable?', author: 'Caleb R.', avatar: 'C', time: '3 days ago', replies: 41, views: 290, likes: 8, pinned: false, tags: ['Campus Life', 'Hostel'], preview: 'I think a 10pm curfew on weeknights is fair but on Fridays after vespers it can be tight. Thoughts?' },
+  ],
+  4: [
+    { id: 401, title: 'God healed my eyesight — sharing my testimony', author: 'Faith O.', avatar: 'F', time: '3 hours ago', replies: 52, views: 380, likes: 94, pinned: true, tags: ['Healing', 'Miracle'], preview: 'For two years I was told I would need glasses permanently. Last month after a season of prayer, I went for a check-up and...' },
+    { id: 402, title: 'Praise report: Got my scholarship approval today!', author: 'Isaac B.', avatar: 'I', time: '1 day ago', replies: 28, views: 195, likes: 61, pinned: false, tags: ['Answered Prayer', 'Education'], preview: 'I had applied and been rejected twice. I prayed and submitted again, trusting God. Today I received the approval email. God is faithful!' },
+  ],
+  5: [
+    { id: 501, title: '[OFFICIAL] Camp Meeting 2026 — Full Schedule Released', author: 'Church Office', avatar: 'O', time: '2 days ago', replies: 7, views: 445, likes: 88, pinned: true, tags: ['Official', 'Camp Meeting'], preview: 'The full schedule for Bugema Camp Meeting 2026 is now available. Download from the noticeboard or view below...' },
+    { id: 502, title: 'Announcement: New Deacons Ordination — July 26', author: 'Church Clerk', avatar: 'C', time: '3 days ago', replies: 4, views: 230, likes: 42, pinned: true, tags: ['Official', 'Ordination'], preview: 'We are pleased to announce the ordination of four new deacons on Sabbath, July 26 during the morning service...' },
+  ],
+  6: [
+    { id: 601, title: 'What\'s the best affordable restaurant near campus?', author: 'Ben K.', avatar: 'B', time: '4 hours ago', replies: 22, views: 134, likes: 18, pinned: false, tags: ['Food', 'Campus Life'], preview: 'On a student budget, I am always looking for good cheap food near Bugema. Share your recommendations!' },
+    { id: 602, title: 'Let\'s start a book club — who\'s interested?', author: 'Lydia M.', avatar: 'L', time: '1 day ago', replies: 16, views: 88, likes: 27, pinned: false, tags: ['Books', 'Fellowship'], preview: 'I want to start a monthly Christian book club where we read and discuss one book together. First pick: Steps to Christ...' },
+  ]
+};
+
+const HOT_THREADS = [
+  { ...FALLBACK_THREADS[4][0], category: 'Testimonies & Praise', categoryColor: '#F59E0B' },
+  { ...FALLBACK_THREADS[2][0], category: 'Bible Discussion', categoryColor: '#0EA5E9' },
+  { ...FALLBACK_THREADS[3][1], category: 'Student Life', categoryColor: '#10B981' },
+];
+
+function Avatar({ letter, color = 'var(--primary)' }: { letter: string; color?: string }) {
+  return (
+    <div style={{
+      width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
+      background: `linear-gradient(135deg, ${color}, ${color}bb)`,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      color: 'white', fontWeight: '700', fontSize: '0.85rem'
+    }}>{letter}</div>
+  );
+}
+
+export const ForumsPage: React.FC = () => {
+  const [view, setView] = useState<'categories' | 'threads' | 'thread'>('categories');
+  const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
+  const [selectedCat, setSelectedCat] = useState<typeof FALLBACK_CATEGORIES[0] | null>(null);
+  const [selectedThread, setSelectedThread] = useState<any | null>(null);
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'latest' | 'hot' | 'unanswered'>('latest');
+  const [showNewThread, setShowNewThread] = useState(false);
+  const [newThread, setNewThread] = useState({ title: '', body: '', tag: '' });
+  const [replyText, setReplyText] = useState('');
+  const [liked, setLiked] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    fetch('http://127.0.0.1:8000/api/forum-categories/')
+      .then(r => r.json())
+      .then(d => { if ((d.results || d).length > 0) setCategories(d.results || d); })
+      .catch(() => {});
+  }, []);
+
+  const threads = selectedCat ? (FALLBACK_THREADS[selectedCat.id] || []) : [];
+  const filteredThreads = threads.filter(t =>
+    t.title.toLowerCase().includes(search.toLowerCase()) ||
+    t.preview.toLowerCase().includes(search.toLowerCase())
+  );
+  const sortedThreads = [...filteredThreads].sort((a, b) => {
+    if (sortBy === 'hot') return b.likes - a.likes;
+    if (sortBy === 'unanswered') return a.replies - b.replies;
+    return 0;
+  });
+  const pinned = sortedThreads.filter(t => t.pinned);
+  const regular = sortedThreads.filter(t => !t.pinned);
+
+  return (
+    <div>
+      {/* Hero */}
+      <motion.div className="page-header" variants={fadeUp} initial="hidden" animate="visible">
+        <div className="container">
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }}
+              style={{ width: '68px', height: '68px', borderRadius: '18px', background: 'rgba(212,175,55,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem' }}>
+              <MessageSquare size={34} color="var(--accent)" />
+            </motion.div>
+            <h1 style={{ marginBottom: '0.5rem' }}>Community Forums</h1>
+            <p style={{ color: 'rgba(255,255,255,0.85)', maxWidth: '520px', margin: '0 auto 2rem' }}>
+              A safe, faith-filled space to discuss, ask, share, and grow together as one church family.
+            </p>
+            {/* Search */}
+            <div style={{ position: 'relative', maxWidth: '480px', margin: '0 auto' }}>
+              <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#aaa' }} />
+              <input
+                type="text" placeholder="Search discussions..."
+                value={search} onChange={e => setSearch(e.target.value)}
+                style={{ width: '100%', padding: '0.85rem 1rem 0.85rem 2.75rem', borderRadius: '12px', border: 'none', fontSize: '0.95rem', background: 'rgba(255,255,255,0.95)', boxSizing: 'border-box', outline: 'none' }}
+              />
+            </div>
+          </div>
+          {/* Stats bar */}
+          <motion.div variants={staggerContainer} initial="hidden" animate="visible"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '0.75rem', maxWidth: '600px', margin: '0 auto' }}>
+            {[{ v: categories.reduce((s,c) => s + (c.thread_count||0), 0) + '+', l: 'Discussions' }, { v: '237', l: 'Members' }, { v: '6', l: 'Categories' }, { v: '18', l: 'Active Today' }].map((s,i) => (
+              <motion.div key={i} variants={staggerItem} style={{ textAlign: 'center', padding: '0.75rem', background: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--accent)' }}>{s.v}</div>
+                <div style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.75)' }}>{s.l}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </motion.div>
+
+      <div className="section-padding">
+        <div className="container">
+
+          {view === 'categories' && (
+            <>
+              {/* Hot Threads */}
+              <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }} style={{ marginBottom: '3rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
+                  <Flame size={20} color="#EF4444" />
+                  <h2 style={{ color: 'var(--primary)', margin: 0 }}>Trending Right Now</h2>
+                </div>
+                <motion.div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+                  variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}>
+                  {HOT_THREADS.map(thread => (
+                    <motion.div key={thread.id} variants={staggerItem} whileHover={{ x: 4 }}
+                      onClick={() => { setSelectedThread(thread); setView('thread'); }}
+                      style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', background: 'white', padding: '1rem 1.25rem', borderRadius: '14px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)', cursor: 'pointer', borderLeft: `4px solid ${thread.categoryColor}` }}>
+                      <Avatar letter={thread.avatar} color={thread.categoryColor} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', flexWrap: 'wrap' }}>
+                          {thread.pinned && <span style={{ fontSize: '0.7rem', background: '#FEF3C7', color: '#92400E', padding: '0.15rem 0.5rem', borderRadius: '999px', fontWeight: '700' }}><Pin size={9} style={{ verticalAlign: 'middle' }} /> Pinned</span>}
+                          <span style={{ fontSize: '0.72rem', background: `${thread.categoryColor}18`, color: thread.categoryColor, padding: '0.15rem 0.5rem', borderRadius: '999px', fontWeight: '600' }}>{thread.category}</span>
+                        </div>
+                        <p style={{ fontWeight: '600', color: '#1e293b', margin: '0 0 0.25rem', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{thread.title}</p>
+                        <p style={{ color: '#888', fontSize: '0.82rem', margin: 0 }}>by {thread.author} · {thread.time}</p>
+                      </div>
+                      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexShrink: 0, color: '#aaa', fontSize: '0.8rem' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><MessageCircle size={14} />{thread.replies}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><ThumbsUp size={14} />{thread.likes}</span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </motion.div>
+
+              {/* Categories Grid */}
+              <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                <h2 style={{ color: 'var(--primary)', marginBottom: '0.5rem' }}>Browse by Category</h2>
+                <p style={{ color: '#666', marginBottom: '1.75rem' }}>Choose a category to read and join discussions</p>
+                <motion.div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}
+                  variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.05 }}>
+                  {categories.map((cat: any) => (
+                    <motion.div key={cat.id} variants={staggerItem} whileHover={{ y: -5, boxShadow: '0 16px 32px rgba(0,0,0,0.1)' }}
+                      onClick={() => { setSelectedCat(cat); setView('threads'); setSearch(''); }}
+                      style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', boxShadow: '0 2px 12px rgba(0,0,0,0.07)' }}>
+                      <div style={{ height: '6px', background: cat.color || 'var(--primary)' }} />
+                      <div style={{ padding: '1.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                          <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: `${cat.color || 'var(--primary)'}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: cat.color || 'var(--primary)' }}>
+                            {cat.icon || <Hash size={22} />}
+                          </div>
+                          {cat.tag && <span style={{ fontSize: '0.7rem', background: `${cat.color || 'var(--primary)'}12`, color: cat.color || 'var(--primary)', padding: '0.2rem 0.6rem', borderRadius: '999px', fontWeight: '700' }}>{cat.tag}</span>}
+                        </div>
+                        <h3 style={{ color: '#1e293b', marginBottom: '0.4rem', fontSize: '1rem' }}>{cat.name}</h3>
+                        <p style={{ color: '#777', fontSize: '0.85rem', lineHeight: '1.5', marginBottom: '1rem' }}>{cat.description}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '0.82rem', color: '#aaa', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <MessageSquare size={13} /> {cat.thread_count || 0} discussions
+                          </span>
+                          <span style={{ fontSize: '0.82rem', fontWeight: '600', color: cat.color || 'var(--primary)' }}>Enter →</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              </motion.div>
+            </>
+          )}
+
+          {view === 'threads' && selectedCat && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              {/* Back + Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <button onClick={() => { setView('categories'); setSelectedCat(null); setSearch(''); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: '1.5px solid #e5e7eb', padding: '0.55rem 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', color: '#555', fontSize: '0.88rem' }}>
+                  <ChevronLeft size={16} /> All Categories
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: `${selectedCat.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedCat.color }}>
+                    {selectedCat.icon || <Hash size={20} />}
+                  </div>
+                  <div>
+                    <h2 style={{ color: 'var(--primary)', margin: 0, fontSize: '1.2rem' }}>{selectedCat.name}</h2>
+                    <p style={{ color: '#888', margin: 0, fontSize: '0.82rem' }}>{selectedCat.thread_count} discussions</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowNewThread(true)} className="btn-accent"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.25rem', fontSize: '0.9rem' }}>
+                  <Plus size={16} /> New Discussion
+                </button>
+              </div>
+
+              {/* Search + Sort */}
+              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+                  <Search size={16} style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: '#bbb' }} />
+                  <input type="text" placeholder="Search this category..." value={search} onChange={e => setSearch(e.target.value)}
+                    style={{ width: '100%', padding: '0.65rem 1rem 0.65rem 2.5rem', border: '1.5px solid #e5e7eb', borderRadius: '10px', fontSize: '0.9rem', boxSizing: 'border-box', outline: 'none' }} />
+                </div>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  {(['latest', 'hot', 'unanswered'] as const).map(s => (
+                    <button key={s} onClick={() => setSortBy(s)}
+                      style={{ padding: '0.6rem 1rem', borderRadius: '10px', border: '1.5px solid', fontSize: '0.82rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s',
+                        borderColor: sortBy === s ? selectedCat.color : '#e5e7eb',
+                        background: sortBy === s ? `${selectedCat.color}12` : 'white',
+                        color: sortBy === s ? selectedCat.color : '#888'
+                      }}>
+                      {s === 'latest' ? '🕐 Latest' : s === 'hot' ? '🔥 Hot' : '💬 Unanswered'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Pinned */}
+              {pinned.length > 0 && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <p style={{ fontSize: '0.78rem', fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.6rem' }}>📌 Pinned</p>
+                  {pinned.map(thread => <ThreadRow key={thread.id} thread={thread} catColor={selectedCat.color} onClick={() => { setSelectedThread(thread); setView('thread'); }} />)}
+                </div>
+              )}
+
+              {/* Regular threads */}
+              {regular.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem', color: '#888' }}>
+                  <MessageCircle size={48} style={{ opacity: 0.2, margin: '0 auto 1rem', display: 'block' }} />
+                  <p>No discussions found. Be the first to start one!</p>
+                </div>
+              ) : (
+                <motion.div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}
+                  variants={staggerContainer} initial="hidden" animate="visible">
+                  {regular.map(thread => <ThreadRow key={thread.id} thread={thread} catColor={selectedCat.color} onClick={() => { setSelectedThread(thread); setView('thread'); }} />)}
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
+          {view === 'thread' && selectedThread && (
+            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+              <button onClick={() => setView(selectedCat ? 'threads' : 'categories')}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: '1.5px solid #e5e7eb', padding: '0.55rem 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', color: '#555', fontSize: '0.88rem', marginBottom: '1.5rem' }}>
+                <ChevronLeft size={16} /> Back to Threads
+              </button>
+
+              {/* Thread Post */}
+              <div style={{ background: 'white', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', marginBottom: '1.5rem' }}>
+                <div style={{ height: '5px', background: 'linear-gradient(90deg, var(--primary), var(--accent))' }} />
+                <div style={{ padding: '2rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                    {selectedThread.tags?.map((tag: string) => (
+                      <span key={tag} style={{ fontSize: '0.72rem', background: 'rgba(212,175,55,0.12)', color: 'var(--accent)', padding: '0.2rem 0.6rem', borderRadius: '999px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Tag size={9} />{tag}
+                      </span>
+                    ))}
+                  </div>
+                  <h2 style={{ color: 'var(--primary)', marginBottom: '1rem', lineHeight: '1.4' }}>{selectedThread.title}</h2>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                    <Avatar letter={selectedThread.avatar} />
+                    <div>
+                      <p style={{ fontWeight: '700', color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>{selectedThread.author}</p>
+                      <p style={{ color: '#aaa', margin: 0, fontSize: '0.8rem' }}>{selectedThread.time}</p>
+                    </div>
+                  </div>
+                  <p style={{ color: '#444', lineHeight: '1.8', fontSize: '0.97rem' }}>{selectedThread.preview} Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation. This represents the full body of the discussion post that would be stored in the database.</p>
+                  <div style={{ display: 'flex', gap: '1.5rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #f0f0f0' }}>
+                    <button onClick={() => setLiked({ ...liked, [selectedThread.id]: !liked[selectedThread.id] })}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1.5px solid', padding: '0.5rem 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem', transition: 'all 0.2s',
+                        borderColor: liked[selectedThread.id] ? 'var(--accent)' : '#e5e7eb',
+                        background: liked[selectedThread.id] ? 'rgba(212,175,55,0.08)' : 'transparent',
+                        color: liked[selectedThread.id] ? 'var(--accent)' : '#888' }}>
+                      <ThumbsUp size={15} /> {selectedThread.likes + (liked[selectedThread.id] ? 1 : 0)} Helpful
+                    </button>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#aaa', fontSize: '0.85rem' }}>
+                      <Eye size={15} /> {selectedThread.views} views
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#aaa', fontSize: '0.85rem' }}>
+                      <MessageCircle size={15} /> {selectedThread.replies} replies
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reply Box */}
+              <div style={{ background: 'white', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+                <h4 style={{ color: 'var(--primary)', marginBottom: '1rem' }}>Add Your Reply</h4>
+                <textarea rows={4} placeholder="Share your thoughts, encouragement, or Scripture..." value={replyText} onChange={e => setReplyText(e.target.value)}
+                  style={{ width: '100%', padding: '0.85rem 1rem', border: '1.5px solid #e5e7eb', borderRadius: '12px', fontSize: '0.92rem', resize: 'vertical', boxSizing: 'border-box', outline: 'none' }} />
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.75rem' }}>
+                  <button onClick={() => { if (replyText.trim()) { setReplyText(''); } }} className="btn-accent"
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 1.5rem', fontSize: '0.9rem' }}>
+                    <Send size={16} /> Post Reply
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+        </div>
+      </div>
+
+      {/* New Thread Modal */}
+      <AnimatePresence>
+        {showNewThread && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+            onClick={(e) => { if (e.target === e.currentTarget) setShowNewThread(false); }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              style={{ background: 'white', borderRadius: '20px', padding: '2rem', width: '100%', maxWidth: '560px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ color: 'var(--primary)', margin: 0 }}>Start a New Discussion</h3>
+                <button onClick={() => setShowNewThread(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa' }}><X size={22} /></button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: '600', color: 'var(--primary)', marginBottom: '0.4rem' }}>Discussion Title *</label>
+                  <input type="text" placeholder="What do you want to discuss?" value={newThread.title} onChange={e => setNewThread({...newThread, title: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e5e7eb', borderRadius: '10px', fontSize: '0.92rem', boxSizing: 'border-box', outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: '600', color: 'var(--primary)', marginBottom: '0.4rem' }}>Tag</label>
+                  <input type="text" placeholder="e.g. Prayer Request, Discussion, Announcement" value={newThread.tag} onChange={e => setNewThread({...newThread, tag: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e5e7eb', borderRadius: '10px', fontSize: '0.92rem', boxSizing: 'border-box', outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.83rem', fontWeight: '600', color: 'var(--primary)', marginBottom: '0.4rem' }}>Your Message *</label>
+                  <textarea rows={5} placeholder="Write your full message here..." value={newThread.body} onChange={e => setNewThread({...newThread, body: e.target.value})}
+                    style={{ width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #e5e7eb', borderRadius: '10px', fontSize: '0.92rem', resize: 'vertical', boxSizing: 'border-box', outline: 'none' }} />
+                </div>
+                <button className="btn-accent" onClick={() => { if (newThread.title && newThread.body) setShowNewThread(false); }}
+                  style={{ padding: '0.9rem', fontWeight: '700', fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <Send size={16} /> Post Discussion
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+function ThreadRow({ thread, catColor, onClick }: { thread: any; catColor: string; onClick: () => void }) {
+  return (
+    <motion.div variants={staggerItem} whileHover={{ x: 3 }} onClick={onClick}
+      style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', background: 'white', padding: '1rem 1.25rem', borderRadius: '14px', boxShadow: '0 1px 8px rgba(0,0,0,0.06)', cursor: 'pointer', transition: 'box-shadow 0.2s' }}>
+      <Avatar letter={thread.avatar} color={catColor} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
+          {thread.tags?.map((tag: string) => (
+            <span key={tag} style={{ fontSize: '0.68rem', background: `${catColor}12`, color: catColor, padding: '0.1rem 0.5rem', borderRadius: '999px', fontWeight: '700' }}>{tag}</span>
+          ))}
+        </div>
+        <p style={{ fontWeight: '600', color: '#1e293b', margin: '0 0 0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{thread.title}</p>
+        <p style={{ color: '#aaa', margin: 0, fontSize: '0.8rem' }}>by {thread.author} · {thread.time}</p>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.3rem', flexShrink: 0 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#888', fontSize: '0.8rem' }}><MessageCircle size={13} /> {thread.replies}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#bbb', fontSize: '0.78rem' }}><Eye size={12} /> {thread.views}</span>
+      </div>
+    </motion.div>
+  );
+}

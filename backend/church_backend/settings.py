@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
     'api',
 ]
@@ -56,6 +57,31 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'church_backend.urls'
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+# REST Framework Configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+}
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # Use your email provider
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your-email@gmail.com'  # Set via environment variable
+EMAIL_HOST_PASSWORD = 'your-password'  # Set via environment variable
+DEFAULT_FROM_EMAIL = 'noreply@seattleinternationalchurch.org'
+
+# Internationalization
+LOCALE_PATHS = [BASE_DIR / 'locale']
 
 
 TEMPLATES = [

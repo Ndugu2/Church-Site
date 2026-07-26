@@ -194,4 +194,23 @@ CORS_ALLOWED_ORIGINS=https://your-frontend-domain.vercel.app
 
 ---
 
+## 🎵 Bridge Hymnal (638) CSV Import
+
+If you have the full Bridge Hymnal source list (CSV or JSON), you can generate a normalized CSV for this project:
+
+```powershell
+cd "c:\Users\ADMIN\Desktop\Church Site"
+python tools\build_bridge_hymnal_csv.py --input your_bridge_hymns_file.csv --output bridge_hymnal_songs.csv --expected-count 638
+```
+
+Template you can fill:
+- `bridge_hymnal_import_template.csv`
+
+Expected output:
+- `bridge_hymnal_songs.csv`
+
+If the script reports a count lower than 638, the input file is incomplete or has rows missing a hymn number/title.
+
+---
+
 *© 2026 Seattle International Church, Bugema University. All rights reserved.*

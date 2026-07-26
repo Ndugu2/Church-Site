@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seattle International Church | Bugema University</title>
+    <!-- Meta Descriptions for SEO -->
+    <meta name="description" content="Welcome to Seattle International Church at Bugema University. A Christ-centered international family of faith growing in Christ, serving the world, and sharing hope. Join us for Sabbath worship, student ministry, and Bible studies.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Top Bar with Tagline & Social / Admin Link -->
+    <div class="top-bar">
+        <div class="container top-bar-content">
+            <span class="tagline">Growing in Christ • Serving the World • Sharing Hope</span>
+            <div class="top-bar-right">
+                <a href="#admin" class="admin-link">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Admin Portal
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header & Navigation -->
+    <header class="main-header">
+        <div class="container header-container">
+            <a href="#home" class="logo-area">
+                <div class="logo-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2">
+                        <path d="M12 2L2 22h20L12 2z"/>
+                        <path d="M12 8v10M9 12h6"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-title">Seattle International</span>
+                    <span class="logo-sub">Church at Bugema University</span>
+                </div>
+            </a>
+            <nav class="nav-bar" id="navBar">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#ministries" class="nav-link">Ministries</a>
+                <a href="#sermons" class="nav-link">Sermons</a>
+                <a href="#events" class="nav-link">Events</a>
+                <a href="#gallery" class="nav-link">Gallery</a>
+                <a href="#give" class="nav-link">Give</a>
+                <a href="#contact" class="nav-link">Contact</a>
+                <a href="#watch-live" class="nav-link watch-live-btn">
+                    <span class="pulse-dot"></span>
+                    Watch Live
+                </a>
+            </nav>
+            <button class="mobile-nav-toggle" id="navToggle" aria-label="Toggle Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container (Dynamic Router Views) -->
+    <main class="content-wrapper">
+
+        <!-- ================= HOME PAGE ================= -->
+        <section id="home" class="page-view active">
+            <!-- Hero Section -->
+            <div class="hero-section">
+                <div class="hero-overlay"></div>
+                <div class="container hero-content">
+                    <h1 class="hero-title">Seattle International Church</h1>
+                    <p class="hero-location">Bugema University</p>
+                    <p class="hero-subtitle">Welcome to a Christ-Centered International Family of Faith</p>
+                    <div class="hero-actions">
+                        <a href="#contact" class="btn btn-primary">Plan Your Visit</a>
+                        <a href="#watch-live" class="btn btn-accent">Watch Live</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Welcome & Quick Info -->
+            <div class="section-padding bg-light">
+                <div class="container grid grid-2 gap-4">
+                    <div class="pastor-welcome-card card">
+                        <div class="pastor-img-placeholder">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div class="pastor-greeting">
+                            <h2 class="section-title">Welcome from our Pastor</h2>
+                            <p class="pastor-quote">"Greetings in the matchless name of our Lord and Savior Jesus Christ! Whether you are a student at Bugema University, a member of the local community, or visiting from abroad, we welcome you to our international family of faith. Together, we seek to grow in grace, serve our community, and share the hope of Christ's soon return."</p>
+                            <p class="pastor-signature">- Pastor John Mwangi, Lead Pastor</p>
+                        </div>
+                    </div>
+                    
+                    <div class="service-times-card card dark-card">
+                        <h2 class="card-title text-gold">Sabbath Worship Times</h2>
+                        <ul class="worship-list">
+                            <li>
+                                <span class="worship-title">Sabbath School</span>
+                                <span class="worship-time">9:00 AM</span>
+                            </li>
+                            <li>
+                                <span class="worship-title">Divine Worship Service</span>
+                                <span class="worship-time">11:00 AM</span>
+                            </li>
+                            <li>
+                                <span class="worship-title">Afternoon Bible Study</span>
+                                <span class="worship-time">2:30 PM</span>
+                            </li>
+                        </ul>
+                        <div class="midweek-times">
+                            <h3 class="midweek-title text-gold">Midweek Fellowship</h3>
+                            <p><strong>Wednesday Prayer Meeting:</strong> 6:00 PM</p>
+                            <p><strong>Friday Vespers:</strong> 6:30 PM</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Hub Standout Feature -->
+            <div class="section-padding accent-bg">
+                <div class="container">
+                    <div class="section-header text-center">
+                        <h2 class="section-title">Student Ministry Hub</h2>
+                        <p class="section-subtitle">Empowering students at Bugema University for service, fellowship, and discipleship</p>
+                    </div>
+                    <div class="grid grid-3 gap-3 margin-top-3">
+                        <div class="student-card card">
+                            <div class="student-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5z"/></svg>
+                            </div>
+                            <h3>Bible Study Groups</h3>
+                            <p>Join specialized student-led cell groups that study, discuss, and encourage one another during the academic semester.</p>
+                            <a href="#bible-study" class="card-link">Sign Up for Study &rarr;</a>
+                        </div>
+                        <div class="student-card card">
+                            <div class="student-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                            </div>
+                            <h3>Volunteer Opportunities</h3>
+                            <p>Get involved in local community service, healthcare outreaches, orphanage visits, and high school ministry campaigns.</p>
+                            <a href="#contact" class="card-link">Join Volunteer Team &rarr;</a>
+                        </div>
+                        <div class="student-card card">
+                            <div class="student-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                            </div>
+                            <h3>Choir & Music Schedules</h3>
+                            <p>Lend your voice to the International Choir or assist in the instrumental praise teams during worship services.</p>
+                            <a href="#ministries" class="card-link">Explore Music Ministry &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Home News, Sermon, & Daily Verse -->
+            <div class="section-padding">
+                <div class="container grid grid-3 gap-3">
+                    <div class="home-sermon-preview card">
+                        <span class="badge">Latest Sermon</span>
+                        <div id="latest-sermon-container" class="margin-top-2">
+                            <!-- Injected by app.js -->
+                        </div>
+                        <a href="#sermons" class="btn btn-outline margin-top-2">View All Sermons</a>
+                    </div>
+                    
+                    <div class="home-events-preview card">
+                        <span class="badge badge-accent">Upcoming Event</span>
+                        <div id="next-event-container" class="margin-top-2">
+                            <!-- Injected by app.js -->
+                        </div>
+                        <a href="#events" class="btn btn-outline margin-top-2">View All Events</a>
+                    </div>
+
+                    <div class="daily-verse-card card dark-card text-center justify-center">
+                        <div class="verse-icon">&#10077;</div>
+                        <p class="verse-text" id="daily-verse">"For I know the plans I have for you," declares the Lord, "plans to prosper you and not to harm you, plans to give you hope and a future."</p>
+                        <p class="verse-ref" id="daily-verse-ref">Jeremiah 29:11</p>
+                        <button class="btn btn-small btn-accent" id="new-verse-btn">Refresh Verse</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Home Gallery Preview -->
+            <div class="section-padding bg-light">
+                <div class="container">
+                    <div class="section-header text-center">
+                        <h2 class="section-title">Worship and Community</h2>
+                        <a href="#gallery" class="view-all-link">Go to Gallery &rarr;</a>
+                    </div>
+                    <div class="gallery-preview-grid grid grid-4 gap-2 margin-top-3" id="gallery-preview-container">
+                        <!-- Injected by app.js -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ABOUT US PAGE ================= -->
+        <section id="about" class="page-view">
+            <div class="page-header header-about">
+                <div class="container text-center">
+                    <h1>About Our Church</h1>
+                    <p>Learn about our history, mission, and beliefs</p>
+                </div>
+            </div>
+
+            <div class="section-padding">
+                <div class="container grid grid-2 gap-4">
+                    <div>
+                        <h2 class="section-title">Our History</h2>
+                        <p>Seattle International Church (SIC) was established to provide a vibrant, spirit-filled worship atmosphere specifically designed for the diverse and multi-ethnic community at Bugema University. Over the years, it has grown from a small gathering of students and faculty members into a prominent international spiritual hub.</p>
+                        <p>As a Seventh-day Adventist congregation, we celebrate diversity and strive to be a home away from home for students representing dozens of nations, fostering deep spiritual integration and professional excellence under God's guidance.</p>
+                        
+                        <div class="mission-vision margin-top-3">
+                            <div class="statement-card">
+                                <h3>Our Mission</h3>
+                                <p>To proclaim the everlasting gospel of Jesus Christ and prepare people for His soon return.</p>
+                            </div>
+                            <div class="statement-card margin-top-2">
+                                <h3>Our Vision</h3>
+                                <p>To build an international family of believers that reflects Christ's love through worship, discipleship, and service.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 class="section-title">Core Values</h2>
+                        <div class="values-grid">
+                            <div class="value-item">
+                                <strong>Biblical Truth</strong>
+                                <p>We hold the Word of God as our ultimate standard of faith and practice.</p>
+                            </div>
+                            <div class="value-item">
+                                <strong>Prayer</strong>
+                                <p>We believe prayer is the lifeline of our relationship with God and the foundation of all ministry.</p>
+                            </div>
+                            <div class="value-item">
+                                <strong>Love</strong>
+                                <p>We practice the unconditional love of Jesus in our relationships and community interaction.</p>
+                            </div>
+                            <div class="value-item">
+                                <strong>Service</strong>
+                                <p>We follow Christ's example of humble service to meet the physical and spiritual needs of others.</p>
+                            </div>
+                            <div class="value-item">
+                                <strong>Fellowship</strong>
+                                <p>We cultivate a warm, inclusive international family where everyone belongs.</p>
+                            </div>
+                            <div class="value-item">
+                                <strong>Integrity</strong>
+                                <p>We strive to walk in honesty, transparency, and consistency in our words and actions.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Our Beliefs (SDA Statement) -->
+            <div class="section-padding bg-light">
+                <div class="container">
+                    <h2 class="section-title text-center">Our Core Beliefs</h2>
+                    <p class="section-subtitle text-center">As Seventh-day Adventists, we accept the Bible as our only creed and hold certain fundamental beliefs.</p>
+                    <div class="grid grid-3 gap-3 margin-top-3" id="beliefs-grid">
+                        <!-- Injected dynamically by app.js -->
+                    </div>
+                    <div class="text-center margin-top-3">
+                        <a href="https://www.adventist.org/beliefs/" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Read All 28 Fundamental Beliefs &nearr;</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leadership Team -->
+            <div class="section-padding">
+                <div class="container">
+                    <h2 class="section-title text-center">Our Leadership</h2>
+                    <p class="section-subtitle text-center">Dedicated servants coordinating ministries and spiritual growth</p>
+                    <div class="grid grid-4 gap-3 margin-top-3" id="leadership-grid">
+                        <!-- Injected by app.js -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MINISTRIES PAGE ================= -->
+        <section id="ministries" class="page-view">
+            <div class="page-header header-ministries">
+                <div class="container text-center">
+                    <h1>Our Ministries</h1>
+                    <p>Discover where you can grow and serve</p>
+                </div>
+            </div>
+
+            <div class="section-padding">
+                <div class="container">
+                    <div class="grid grid-3 gap-3" id="ministries-grid">
+                        <!-- Injected by app.js -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ministry Detail Modal -->
+            <div id="ministry-modal" class="modal">
+                <div class="modal-content">
+                    <button class="close-modal" id="close-ministry-modal">&times;</button>
+                    <div id="ministry-modal-body">
+                        <!-- Content Injected dynamically by app.js -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SERMONS PAGE ================= -->
+        <section id="sermons" class="page-view">
+            <div class="page-header header-sermons">
+                <div class="container text-center">
+                    <h1>Sermon Archive</h1>
+                    <p>Listen, download resources, and grow in God's Word</p>
+                </div>
+            </div>
+
+            <div class="section-padding">
+                <div class="container">
+                    <!-- Categories Filtering -->
+                    <div class="sermon-filters" id="sermon-filters-container">
+                        <button class="filter-btn active" data-category="all">All Sermons</button>
+                        <button class="filter-btn" data-category="Sabbath Sermons">Sabbath Sermons</button>
+                        <button class="filter-btn" data-category="Week of Prayer">Week of Prayer</button>
+                        <button class="filter-btn" data-category="Evangelistic Series">Evangelistic Series</button>
+                        <button class="filter-btn" data-category="Bible Studies">Bible Studies</button>
+                    </div>
+
+                    <div class="grid grid-3 gap-3 margin-top-3" id="sermons-grid">
+                        <!-- Injected by app.js -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= EVENTS PAGE ================= -->
+        <section id="events" class="page-view">
+            <div class="page-header header-events">
+                <div class="container text-center">
+                    <h1>Upcoming Events</h1>
+                    <p>Keep up to date with events, programs, and outreach campaigns</p>
+                </div>
+            </div>
+
+            <div class="section-padding">
+                <div class="container">
+                    <div class="grid grid-2 gap-4" id="events-grid">
+                        <!-- Injected by app.js -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Registration Modal -->
+            <div id="event-reg-modal" class="modal">
+                <div class="modal-content modal-medium">
+                    <button class="close-modal" id="close-event-modal">&times;</button>
+                    <h2 class="section-title text-center">Event Registration</h2>
+                    <p class="text-center text-muted" id="event-reg-title-name">Registering for...</p>
+                    <form id="event-reg-form" class="margin-top-3">
+                        <input type="hidden" id="event-reg-id">
+                        <div class="form-group">
+                            <label for="event-user-name">Full Name</label>
+                            <input type="text" id="event-user-name" required placeholder="Enter your name">
+                        </div>
+                        <div class="form-group">
+                            <label for="event-user-email">Email Address</label>
+                            <input type="email" id="event-user-email" required placeholder="Enter your email">
+                        </div>
+                        <div class="form-group">
+                            <label for="event-user-phone">Phone Number</label>
+                            <input type="tel" id="event-user-phone" required placeholder="e.g. +256...">
+                        </div>
+                        <div class="form-group">
+                            <label for="event-user-comments">Additional Notes / Dietary requirements (if applicable)</label>
+                            <textarea id="event-user-comments" placeholder="Any optional details"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Confirm Registration</button>
+                    </form>
+                    <div id="event-reg-success" class="alert alert-success margin-top-2 hidden">
+                        Successfully registered! We have saved your spot.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= GALLERY PAGE ================= -->
+        <section id="gallery" class="page-view">
+            <div class="page-header header-gallery">
+                <div class="container text-center">
+                    <h1>Photo Gallery</h1>
+                    <p>Memorable moments of worship, fellowship, and service</p>
+                </div>
+            </div>
+
+            <div class="section-padding">
+                <div class="container">
+                    <!-- Album navigation -->
+                    <div class="gallery-albums" id="gallery-album-tabs">
+                        <button class="album-btn active" data-album="all">All Albums</button>
+                        <button class="album-btn" data-album="Sabbath Worship">Sabbath Worship</button>
+                        <button class="album-btn" data-album="Baptism">Baptism</button>
+                        <button class="album-btn" data-album="Graduation Sabbath">Graduation Sabbath</button>
+                        <button class="album-btn" data-album="Youth Camp">Youth Camp</button>
+                        <button class="album-btn" data-album="Choir">Choir</button>
+                        <button class="album-btn" data-album="Community Outreach">Community Outreach</button>
+                    </div>
+
+                    <div class="grid grid-3 gap-2 margin-top-3" id="gallery-grid">
+                        <!-- Injected by app.js -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= WATCH LIVE PAGE ================= -->
+        <section id="watch-live" class="page-view">
+            <div class="page-header header-watch">
+                <div class="container text-center">
+                    <h1>Watch Live</h1>
+                    <p>Worship with us virtually from anywhere in the world</p>
+                </div>
+            </div>
+
+            <div class="section-padding">
+                <div class="container grid grid-3 gap-4">
+                    <!-- Left: Stream Screen -->
+                    <div class="col-span-2">
+                        <div class="video-container shadow">
+                            <!-- YouTube Embed or Mock Screen -->
+                            <iframe id="live-stream-player" width="100%" height="450" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Worship Stream Player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <div class="stream-info card margin-top-2">
+                            <div class="flex justify-between items-center">
+                                <span class="badge badge-accent pulsing-badge">LIVE NOW</span>
+                                <span class="viewers-count">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    142 Watching
+                                </span>
+                            </div>
+                            <h2 class="margin-top-2">Sabbath Divine Worship Service</h2>
+                            <p class="text-muted">Seattle International Church, Bugema University - Live Broadcast</p>
+                            <p class="margin-top-1">Welcome online family! We are currently worshiping together. Feel free to submit prayer requests during the service and participate in the live community chat.</p>
+                        </div>
+                    </div>
+
+                    <!-- Right: Live Chat & Feedback -->
+                    <div class="live-chat-panel card">
+                        <h3 class="card-title">Live Prayer & Fellowship Chat</h3>
+                        <div class="chat-messages" id="chat-messages-container">
+                            <div class="chat-msg">
+                                <span class="chat-user">Ruth Atwine:</span>
+                                <span class="chat-text">Happy Sabbath everyone! Watching from Kampala.</span>
+                            </div>
+                            <div class="chat-msg">
+                                <span class="chat-user">Pastor John:</span>
+                                <span class="chat-text">Amen, welcome Ruth! Blessed Sabbath.</span>
+                            </div>
+                            <div class="chat-msg">
+                                <span class="chat-user">David Miller:</span>
+                                <span class="chat-text">Greetings from Seattle, USA. So glad to tune in today.</span>
+                            </div>
+                        </div>
+                        <form id="chat-send-form" class="chat-input-area margin-top-2">
+                            <input type="text" id="chat-message-input" required placeholder="Type a message...">
+                            <button type="submit" class="btn btn-accent btn-small">Send</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= BIBLE STUDY PAGE ================= -->
+        <section id="bible-study" class="page-view">
+            <div class="page-header header-bible">
+                <div class="container text-center">
+                    <h1>Bible Study Registration</h1>
+                    <p>Grow in knowledge of the scriptures with church leaders and friends</p>
+                </div>
+            </div>
+
+            <div class="section-padding">
+                <div class="container max-width-600 card">
+                    <h2 class="section-title text-center">Register for Bible Study</h2>
+                    <p class="text-center text-muted">Submit the form below, and one of our study guides or elders will contact you to coordinate a group or individual session.</p>
+                    <form id="bible-study-form" class="margin-top-3">
+                        <div class="form-group">
+                            <label for="study-name">Full Name</label>
+                            <input type="text" id="study-name" required placeholder="Enter your full name">
+                        </div>
+                        <div class="form-group">
+                            <label for="study-email">Email Address</label>
+                            <input type="email" id="study-email" required placeholder="Enter your email">
+                        </div>
+                        <div class="form-group">
+                            <label for="study-phone">Phone Number</label>
+                            <input type="tel" id="study-phone" required placeholder="e.g. +256 701 234567">
+                        </div>
+                        <div class="form-group">
+                            <label for="study-country">Country of Origin</label>
+                            <input type="text" id="study-country" required placeholder="e.g. Uganda, Kenya, Rwanda, USA">
+                        </div>
+                        <div class="form-group">
+                            <label for="study-course">Select Study Topic / Level</label>
+                            <select id="study-course" required>
+                                <option value="" disabled selected>Select a study guide...</option>
+                                <option value="Discover Bible Lessons (Introduction)">Discover Bible Lessons (Introduction)</option>
+                                <option value="Daniel and Revelation (Prophecy Focus)">Daniel & Revelation (Prophecy Focus)</option>
+                                <option value="SDA Baptism Preparation Study">Baptism Preparation Study</option>
+                                <option value="Christ-Centered Living (Discipleship)">Christ-Centered Living (Discipleship)</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Submit Registration</button>
+                    </form>
+                    <div id="bible-study-success" class="alert alert-success margin-top-2 hidden">
+                        Thank you for registering! Our Bible study team will reach out to you shortly.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PRAYER REQUESTS PAGE ================= -->
+        <section id="prayer-requests" class="page-view">
+            <div class="page-header header-prayer">
+                <div class="container text-center">
+                    <h1>Prayer Request Chamber</h1>
+                    <p>You are not alone. Let us stand with you in prayer.</p>
+                </div>
+            </div>
+
+            <div class="section-padding">
+                <div class="container max-width-600 card">
+                    <h2 class="section-title text-center">Submit a Prayer Request</h2>
+                    <p class="text-center text-muted">Your request will be delivered to our pastors and elders. If checked confidential, only the pastors will receive it.</p>
+                    <form id="prayer-request-form" class="margin-top-3">
+                        <div class="form-group">
+                            <label for="prayer-name">Your Name (Optional)</label>
+                            <input type="text" id="prayer-name" placeholder="Leave blank to submit anonymously">
+                        </div>
+                        <div class="form-group">
+                            <label for="prayer-content">Prayer Request</label>
+                            <textarea id="prayer-content" required placeholder="Write your petition or praise report here..." rows="6"></textarea>
+                        </div>
+                        <div class="form-group checkbox-group">
+                            <input type="checkbox" id="prayer-confidential">
+                            <label for="prayer-confidential">Keep this request strictly confidential (Pastors only)</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Submit Request</button>
+                    </form>
+                    <div id="prayer-request-success" class="alert alert-success margin-top-2 hidden">
+                        Your request has been submitted. Rest assured, our team will be praying for you.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= GIVE PAGE ================= -->
+        <section id="give" class="page-view">
+            <div class="page-header header-give">
+                <div class="container text-center">
+                    <h1>Giving & Support</h1>
+                    <p>Support our local church, student ministries, and outreach programs</p>
+                </div>
+            </div>
+
+            <div class="section-padding">
+                <div class="container grid grid-2 gap-4">
+                    <!-- Left: Online Payment Form -->
+                    <div class="card">
+                        <h2 class="card-title text-gold">Online Tithes & Offerings</h2>
+                        <form id="donation-form" class="margin-top-2">
+                            <div class="form-group">
+                                <label for="donate-amount">Amount (UGX / USD)</label>
+                                <input type="number" id="donate-amount" required min="1000" placeholder="e.g. 50000">
+                            </div>
+                            <div class="form-group">
+                                <label for="donate-fund">Allocation Fund</label>
+                                <select id="donate-fund" required>
+                                    <option value="Tithe">Tithe</option>
+                                    <option value="Offering">Offering</option>
+                                    <option value="Building Fund">Building Fund</option>
+                                    <option value="Mission Fund">Mission / Student Outreach</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="donate-method">Payment Method</label>
+                                <select id="donate-method" required>
+                                    <option value="Mobile Money">Mobile Money (MTN / Airtel)</option>
+                                    <option value="Bank Account">Bank Account Transfer</option>
+                                    <option value="PayPal">PayPal</option>
+                                </select>
+                            </div>
+                            <div id="dynamic-payment-fields">
+                                <!-- Dynamically changes based on choice -->
+                            </div>
+                            <button type="submit" class="btn btn-accent btn-block margin-top-2">Complete Transfer</button>
+                        </form>
+                        <div id="donation-success" class="alert alert-success margin-top-2 hidden">
+                            Thank you! Your donation request has been recorded. May God bless your stewardship.
+                        </div>
+                    </div>
+
+                    <!-- Right: Alternate Methods Instructions -->
+                    <div>
+                        <h2 class="section-title">Giving Details</h2>
+                        <p>Honoring the Lord with your substance is an act of worship. Here are the local bank and mobile accounts for Seattle International Church.</p>
+                        
+                        <div class="payment-method-card card margin-top-2">
+                            <h3>Mobile Money (Uganda)</h3>
+                            <p><strong>Airtel Money Merchant Code:</strong> 1224556</p>
+                            <p><strong>MTN MoMo Pay Merchant Code:</strong> 889988</p>
+                            <p class="text-muted">Account Name: Seattle International Church - Bugema</p>
+                        </div>
+
+                        <div class="payment-method-card card margin-top-2">
+                            <h3>Bank Transfer</h3>
+                            <p><strong>Bank:</strong> Stanbic Bank Uganda</p>
+                            <p><strong>Branch:</strong> Mukono Branch</p>
+                            <p><strong>Account Number:</strong> 9030018945628</p>
+                            <p><strong>Swift Code:</strong> SBICUGKAX</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= CONTACT PAGE ================= -->
+        <section id="contact" class="page-view">
+            <div class="page-header header-contact">
+                <div class="container text-center">
+                    <h1>Contact Us</h1>
+                    <p>Get in touch or visit Bugema University campus</p>
+                </div>
+            </div>
+
+            <div class="section-padding">
+                <div class="container grid grid-2 gap-4">
+                    <!-- Contact Form -->
+                    <div class="card">
+                        <h2 class="card-title">Send a Message</h2>
+                        <form id="contact-form" class="margin-top-2">
+                            <div class="form-group">
+                                <label for="contact-name">Your Name</label>
+                                <input type="text" id="contact-name" required placeholder="Enter name">
+                            </div>
+                            <div class="form-group">
+                                <label for="contact-email">Email Address</label>
+                                <input type="email" id="contact-email" required placeholder="Enter email">
+                            </div>
+                            <div class="form-group">
+                                <label for="contact-msg">Message</label>
+                                <textarea id="contact-msg" required rows="5" placeholder="Write message..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">Send Message</button>
+                        </form>
+                        <div id="contact-success" class="alert alert-success margin-top-2 hidden">
+                            Message sent successfully! We'll reply as soon as possible.
+                        </div>
+                    </div>
+
+                    <!-- Campus Location Info & Mock Map -->
+                    <div>
+                        <h2 class="section-title">Where to Find Us</h2>
+                        <p class="margin-top-1">Our chapel is situated on the beautiful campus of <strong>Bugema University</strong>, located along Gayaza-Zirobwe Road, 32 kilometers north of Kampala, Uganda.</p>
+                        
+                        <div class="contact-details margin-top-2">
+                            <p>
+                                <strong>Phone:</strong> +256 700 000 000 | +256 770 000 000
+                            </p>
+                            <p>
+                                <strong>Email:</strong> sic@bugema.ac.ug
+                            </p>
+                            <p>
+                                <strong>WhatsApp:</strong> +256 700 000 000
+                            </p>
+                        </div>
+
+                        <!-- Mock Google Map visual with nice styling -->
+                        <div class="mock-map margin-top-3">
+                            <div class="map-inner">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="1.5">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                    <circle cx="12" cy="10" r="3"/>
+                                </svg>
+                                <strong>Bugema University Campus</strong>
+                                <span>Gayaza-Zirobwe Road, Uganda</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= ADMIN DASHBOARD PAGE ================= -->
+        <section id="admin" class="page-view">
+            <div class="page-header header-admin">
+                <div class="container text-center">
+                    <h1>Admin Dashboard</h1>
+                    <p>Church Management and Request Portal</p>
+                </div>
+            </div>
+
+            <div class="section-padding">
+                <div class="container admin-container">
+                    <div class="admin-sidebar card">
+                        <h3 class="admin-sidebar-title">Navigation</h3>
+                        <ul class="admin-menu" id="admin-nav-tabs">
+                            <li><button class="admin-tab-btn active" data-tab="admin-stats">Dashboard Stats</button></li>
+                            <li><button class="admin-tab-btn" data-tab="admin-studies">Bible Studies</button></li>
+                            <li><button class="admin-tab-btn" data-tab="admin-prayers">Prayer Requests</button></li>
+                            <li><button class="admin-tab-btn" data-tab="admin-donations">Donations</button></li>
+                            <li><button class="admin-tab-btn" data-tab="admin-events">Manage Events</button></li>
+                            <li><button class="admin-tab-btn" data-tab="admin-sermons">Manage Sermons</button></li>
+                        </ul>
+                    </div>
+
+                    <div class="admin-main-panel card">
+                        <!-- Dashboard Stats Tab -->
+                        <div id="admin-stats" class="admin-tab-content active">
+                            <h2>Key Statistics</h2>
+                            <div class="grid grid-3 gap-2 margin-top-2">
+                                <div class="stat-card">
+                                    <span class="stat-num" id="stat-prayers">0</span>
+                                    <span class="stat-label">Prayer Requests</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-num" id="stat-studies">0</span>
+                                    <span class="stat-label">Bible Study Signups</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-num" id="stat-donations">0 UGX</span>
+                                    <span class="stat-label">Total Donations</span>
+                                </div>
+                            </div>
+                            <h3 class="margin-top-3">Recent Activity Logs</h3>
+                            <div class="activity-log-table margin-top-1" id="activity-logs">
+                                <!-- Injected by app.js -->
+                            </div>
+                        </div>
+
+                        <!-- Bible Studies Tab -->
+                        <div id="admin-studies" class="admin-tab-content">
+                            <h2>Bible Study Registration List</h2>
+                            <div class="table-responsive margin-top-2">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Email / Phone</th>
+                                            <th>Country</th>
+                                            <th>Topic</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-bible-list">
+                                        <!-- Injected dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Prayer Requests Tab -->
+                        <div id="admin-prayers" class="admin-tab-content">
+                            <h2>Prayer Requests Chamber Log</h2>
+                            <div class="table-responsive margin-top-2">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Request</th>
+                                            <th>Confidential?</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-prayer-list">
+                                        <!-- Injected dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Donations Tab -->
+                        <div id="admin-donations" class="admin-tab-content">
+                            <h2>Donation Records</h2>
+                            <div class="table-responsive margin-top-2">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Amount</th>
+                                            <th>Fund</th>
+                                            <th>Method</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-donations-list">
+                                        <!-- Injected dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Manage Events Tab -->
+                        <div id="admin-events" class="admin-tab-content">
+                            <div class="flex justify-between items-center">
+                                <h2>Events Calendar Management</h2>
+                                <button class="btn btn-accent btn-small" id="admin-add-event-btn">+ Add New Event</button>
+                            </div>
+                            <div class="table-responsive margin-top-2">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Event Name</th>
+                                            <th>Date</th>
+                                            <th>Location</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-events-list">
+                                        <!-- Injected dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Manage Sermons Tab -->
+                        <div id="admin-sermons" class="admin-tab-content">
+                            <div class="flex justify-between items-center">
+                                <h2>Sermon Archive Management</h2>
+                                <button class="btn btn-accent btn-small" id="admin-add-sermon-btn">+ Add New Sermon</button>
+                            </div>
+                            <div class="table-responsive margin-top-2">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Speaker</th>
+                                            <th>Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-sermons-list">
+                                        <!-- Injected dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div class="container footer-grid grid grid-3 gap-3">
+            <div>
+                <h3>Seattle International Church</h3>
+                <p class="margin-top-1 font-size-sm">Bugema University, Gayaza-Zirobwe Road, Uganda. Fostering faith, global citizenship, and active ministry in preparation for the Second Coming.</p>
+                <div class="footer-socials margin-top-2">
+                    <!-- WhatsApp SVG icon -->
+                    <a href="https://wa.me/256700000000" aria-label="WhatsApp Link" target="_blank" rel="noopener noreferrer">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    </a>
+                    <!-- Youtube/Live icon -->
+                    <a href="#watch-live" aria-label="YouTube Link">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                    </a>
+                </div>
+            </div>
+            
+            <div>
+                <h3>Quick Links</h3>
+                <ul class="footer-links">
+                    <li><a href="#about">Our Beliefs & Team</a></li>
+                    <li><a href="#ministries">Ministries & Service</a></li>
+                    <li><a href="#bible-study">Request Bible Study</a></li>
+                    <li><a href="#prayer-requests">Prayer Chamber</a></li>
+                    <li><a href="#give">Support Ministry</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h3>Daily Verse</h3>
+                <div class="footer-verse">
+                    <p id="footer-daily-verse">"Commit your way to the Lord; trust in him, and he will act."</p>
+                    <span id="footer-daily-verse-ref">- Psalm 37:5</span>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom text-center">
+            <p>&copy; 2026 Seattle International Church, Bugema University. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- App JavaScript Engine -->
+    <script src="app.js"></script>
+</body>
+</html>
